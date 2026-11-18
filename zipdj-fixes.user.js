@@ -475,6 +475,39 @@
     document.querySelectorAll(SEARCH_INPUT_SELECTOR).forEach(guardSearchInput);
   }
 
+  // ---- Roomier look ----------------------------------------------------------------------
+
+  // Values to tweak to taste. ZipDJ's own: 40px rows, 12px text, 11px in the download manager.
+  const ROOMY_ROW_HEIGHT = '48px';
+  const ROOMY_FONT_SIZE = '13px';
+  // Pixels, like the Release column, for the same reason. The title and artist columns
+  // keep their percentages and share what is left.
+  const ROOMY_LABEL_COLUMN_WIDTH = '150px';
+  const ROOMY_GENRE_COLUMN_WIDTH = '150px';
+  const ROOMY_DOWNLOAD_MANAGER_FONT_SIZE = '12px';
+  const ROOMY_DOWNLOAD_MANAGER_LINE_HEIGHT = '1.5';
+
+  const TRACK_LIST_SCOPE = '.zd-track-view';
+  const TRACK_ROW_SELECTOR = 'tr.zdtrackslist';
+
+  // The app sets these sizes with "!important", so the script has to as well.
+  function addRoomyStyles() {
+    const style = document.createElement('style');
+    style.textContent = `
+      ${TRACK_LIST_SCOPE} table.zd-inner-table td { font-size: ${ROOMY_FONT_SIZE} !important; }
+      ${TRACK_LIST_SCOPE} ${TRACK_ROW_SELECTOR} > td {
+        height: ${ROOMY_ROW_HEIGHT} !important; white-space: nowrap;
+      }
+      ${TRACK_LIST_SCOPE} .zd-label { width: ${ROOMY_LABEL_COLUMN_WIDTH} !important; }
+      ${TRACK_LIST_SCOPE} .zd-genre { width: ${ROOMY_GENRE_COLUMN_WIDTH} !important; }
+      .${DOWNLOAD_MANAGER_INFO_CLASS} {
+        font-size: ${ROOMY_DOWNLOAD_MANAGER_FONT_SIZE};
+        line-height: ${ROOMY_DOWNLOAD_MANAGER_LINE_HEIGHT};
+      }
+    `;
+    document.head.appendChild(style);
+  }
+
   // ---- Start -----------------------------------------------------------------------------
 
   function addStyles() {
@@ -509,6 +542,7 @@
   // Works whether the manager starts the script before or after the page has loaded.
   function startWhenDocumentIsReady() {
     addStyles();
+    addRoomyStyles();
     onPageChanged();
     new MutationObserver(onPageChanged).observe(document.body, { childList: true, subtree: true });
   }
