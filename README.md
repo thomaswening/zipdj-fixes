@@ -6,6 +6,8 @@ A userscript for members of [ZipDJ](https://www.zipdj.com), the DJ record pool. 
 - **Real links in the download history.** Track titles become links. Middle-click or Ctrl+click opens the release in a new tab, so the history keeps its place and doesn't reload.
 - **Spaces in the search box.** On the search results page, a space typed right after a letter no longer disappears.
 
+![ZipDJ's download history with the added Label column between Genre and Date, showing labels such as Intangible, Axtone and d:vision](docs/images/download-history-labels.png)
+
 The script sends no requests of its own. It reads the labels from data the history page already loads, and it changes only how pages look and behave in your own browser.
 
 ## Status
