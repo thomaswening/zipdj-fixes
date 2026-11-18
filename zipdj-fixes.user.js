@@ -292,8 +292,10 @@
 
   // The app reuses a row for another track when the list changes, so each row records which
   // track it shows and whether the script knew the track's details when it drew the row.
-  function shownTrackKey(trackId, track) {
-    return track ? trackId : `${trackId}:pending`;
+  function shownTrackKey(trackId, track, hasReleaseColumn = false) {
+    const pendingMark = track ? '' : ':pending';
+    const releaseColumnMark = hasReleaseColumn ? ':release' : '';
+    return `${trackId}${pendingMark}${releaseColumnMark}`;
   }
 
   function addReleaseCell(titleCell, releaseName, releaseId) {
@@ -310,25 +312,27 @@
     const titleLink = titleCell.querySelector(LIST_TITLE_LINK_SELECTOR);
     if (!titleLink) return;
     const text = createText(title, `${TITLE_TEXT_CLASS} ${APP_BRIGHT_TEXT_CLASS} ${OWN_ELEMENT_CLASS}`);
-    if (mix) text.appendChild(createText(` (${mix})`, `${APP_DIM_TEXT_CLASS} ml-1`));
+    if (mix) text.appendChild(createText(` (${mix})`, APP_DIM_TEXT_CLASS));
     titleLink.insertBefore(text, titleLink.querySelector(LIST_NEW_INDICATOR_SELECTOR));
     titleCell.classList.add(SPLIT_TITLE_CLASS);
   }
 
-  function enhanceListRow(titleCell) {
+  function enhanceListRow(titleCell, hasReleaseColumn) {
     const row = titleCell.closest('tr');
     const playLink = row.querySelector(PLAY_LINK_SELECTOR);
     if (!playLink) return;
     const trackId = playLink.dataset.id;
     const track = tracksById.get(trackId);
-    const key = shownTrackKey(trackId, track);
+    const key = shownTrackKey(trackId, track, hasReleaseColumn);
     if (row.getAttribute(SHOWN_TRACK_ATTRIBUTE) === key) return;
 
     removeOwnElements(row);
     titleCell.classList.remove(SPLIT_TITLE_CLASS);
-    const releaseName = track?.releaseName ?? playLink.dataset.release;
-    const releaseId = track?.releaseId ?? playLink.dataset.release_id;
-    addReleaseCell(titleCell, releaseName, releaseId);
+    if (hasReleaseColumn) {
+      const releaseName = track?.releaseName ?? playLink.dataset.release;
+      const releaseId = track?.releaseId ?? playLink.dataset.release_id;
+      addReleaseCell(titleCell, releaseName, releaseId);
+    }
     const title = track && titleOf(track);
     if (title) addSplitTitle(titleCell, title, track.trackMix);
     row.setAttribute(SHOWN_TRACK_ATTRIBUTE, key);
@@ -336,10 +340,7 @@
 
   // The header row lives in a table of its own, where the title comes before the cover and
   // play cells. So the Release cell goes before the Artist cell, whose look it copies.
-  function addListReleaseHeader() {
-    const titleHeaders = [...document.querySelectorAll(LIST_TITLE_CELL_SELECTOR)].filter(
-      (cell) => cell.textContent.trim() === LIST_TITLE_HEADER_TEXT,
-    );
+  function addListReleaseHeaders(titleHeaders) {
     for (const titleHeader of titleHeaders) {
       const artistHeader = titleHeader.parentElement.querySelector(LIST_ARTIST_HEADER_SELECTOR);
       if (!artistHeader) continue;
@@ -352,12 +353,20 @@
     }
   }
 
+  // Only lists headed "Track / Mix" get the Release column. A release's own page lists its
+  // tracks under another header, and a Release column would only repeat the page's title.
   function enhanceTrackLists() {
-    const titleCells = [...document.querySelectorAll(LIST_TITLE_CELL_SELECTOR)].filter((cell) =>
-      cell.querySelector(LIST_TITLE_LINK_SELECTOR),
+    const allTitleCells = [...document.querySelectorAll(LIST_TITLE_CELL_SELECTOR)];
+    const titleHeaders = allTitleCells.filter(
+      (cell) => cell.textContent.trim() === LIST_TITLE_HEADER_TEXT,
     );
-    titleCells.forEach(enhanceListRow);
-    if (titleCells.length > 0) addListReleaseHeader();
+    const hasReleaseColumn = titleHeaders.length > 0;
+    for (const titleCell of allTitleCells) {
+      if (titleCell.querySelector(LIST_TITLE_LINK_SELECTOR)) {
+        enhanceListRow(titleCell, hasReleaseColumn);
+      }
+    }
+    addListReleaseHeaders(titleHeaders);
   }
 
   // ---- Download manager ------------------------------------------------------------------
