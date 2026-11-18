@@ -1,9 +1,10 @@
 # ZipDJ fixes
 
-A userscript for members of [ZipDJ](https://www.zipdj.com), the DJ record pool. It fixes annoyances in ZipDJ's member web app, in five places:
+A userscript for members of [ZipDJ](https://www.zipdj.com), the DJ record pool. It fixes annoyances in ZipDJ's member web app, in six places:
 
 - [Track lists](#track-lists): title and mix apart from the release
 - [Downloaded tracks](#downloaded-tracks): dimmed or hidden in track lists
+- [Roomier look](#roomier-look): taller rows, larger text, wider Label and Genre columns
 - [Download manager](#download-manager): links to release, artist and label
 - [Download history](#download-history): a Label column and real links
 - [Search box](#search-box): keeps the space you just typed
@@ -30,6 +31,12 @@ To leave downloaded tracks out altogether, click **Hide downloaded** next to Gen
 
 ![The same list with downloaded tracks hidden: the button next to Genre Filter reads "Show downloaded", and the list goes straight from "Mother (Osadon Remix)" to "Tribe (Malikk Remix)"](docs/images/track-list-downloaded-hidden.png)
 
+### Roomier look
+
+Track lists and the download history get taller rows (48 instead of 40 pixels) and slightly larger text. The Label and Genre columns get a larger share of the width, so most labels and genres fit. While the download manager is open, track lists hide the Released column to leave the other columns more room. The download manager's entries get larger text and more space between lines. ZipDJ's colours and fonts stay as they are.
+
+![ZipDJ's New Releases with the download manager open: taller rows, labels such as "Must Make Music" in a wider Label column, no Released column, and download manager entries on three spaced lines](docs/images/roomier-track-list.png)
+
 ### Download manager
 
 Each entry links its release, each of its artists and its label, which is added as a third line. For an EP track, the entry shows the track's own title when the track has appeared in a list since the page was loaded. Otherwise it shows the release's name, as ZipDJ does.
@@ -50,7 +57,7 @@ On the search results page, a space typed right after a letter no longer disappe
 
 ## Status
 
-Version 1.3.0, 18 November 2026. It was tested by injection in Chrome. Version 1.0.0, the first public release, was also tested with Violentmonkey in Firefox.
+Version 1.4.0, 18 November 2026. It was tested by injection in Chrome. Version 1.0.0, the first public release, was also tested with Violentmonkey in Firefox.
 
 ## Install
 
