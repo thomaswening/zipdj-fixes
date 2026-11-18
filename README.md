@@ -1,8 +1,10 @@
 # ZipDJ fixes
 
-A userscript for members of [ZipDJ](https://www.zipdj.com), the DJ record pool. It fixes annoyances in ZipDJ's member web app, in five places:
+A userscript for members of [ZipDJ](https://www.zipdj.com), the DJ record pool. It fixes annoyances in ZipDJ's member web app, in seven places:
 
 - [Track lists](#track-lists): title and mix apart from the release
+- [Downloaded tracks](#downloaded-tracks): dimmed or hidden in track lists
+- [Roomier look](#roomier-look): taller rows, larger text, wider Label and Genre columns
 - [Keyboard shortcuts](#keyboard-shortcuts): keys for track lists, and a visible selection
 - [Download manager](#download-manager): links to release, artist and label
 - [Download history](#download-history): a Label column and real links
@@ -18,6 +20,24 @@ ZipDJ shows a track as its release's name followed by the mix, so an EP track re
 
 ![A ZipDJ track list of the label 8bit: each title is followed by its mix in brackets, such as "One More Time (Extended Mix)", and the added Release column shows "Musica (EP)"](docs/images/track-list-release-column.png)
 
+### Downloaded tracks
+
+Track lists dim the tracks you have already downloaded, so new ones stand out when you go through a label or an artist. Hovering a row shows it in full again. ZipDJ's own sign is easy to miss: it only leaves out the download arrow. The replay icon in place of the play icon means you have played the track, not downloaded it. The download history isn't dimmed, since every track there is downloaded.
+
+A track you download now is dimmed the next time its list loads.
+
+To leave downloaded tracks out altogether, click **Hide downloaded** next to Genre Filter. The button then reads **Show downloaded** and brings them back. Your browser remembers the choice for every list. A page then shows fewer than its usual 50 tracks, since ZipDJ still counts the hidden ones.
+
+![A ZipDJ track list of the label 8bit: the downloaded tracks, such as "Mother (Extended Mix)" and "Musica (Extended Mix)", are dimmed, while the others, such as "Mother (Osadon Remix)", are shown in full](docs/images/track-list-downloaded-dimmed.png)
+
+![The same list with downloaded tracks hidden: the button next to Genre Filter reads "Show downloaded", and the list goes straight from "Mother (Osadon Remix)" to "Tribe (Malikk Remix)"](docs/images/track-list-downloaded-hidden.png)
+
+### Roomier look
+
+Track lists and the download history get taller rows (48 instead of 40 pixels) and slightly larger text. The Label and Genre columns get a larger share of the width, so most labels and genres fit. While the download manager is open, track lists hide the Released column to leave the other columns more room. The download manager's entries get larger text and more space between lines. ZipDJ's colours and fonts stay as they are.
+
+![ZipDJ's New Releases with the download manager open: taller rows, labels such as "Must Make Music" in a wider Label column, no Released column, and download manager entries on three spaced lines](docs/images/roomier-track-list.png)
+
 ### Keyboard shortcuts
 
 ZipDJ has keyboard shortcuts of its own, listed behind the keyboard icon in its player. Its selected track was hard to see, though. The script tints the selected row blue, and a click on a row selects it. It adds these keys:
@@ -31,7 +51,7 @@ ZipDJ has keyboard shortcuts of its own, listed behind the keyboard icon in its 
 | / | Jump to the search box |
 | ? | Show or hide a list of these keys and ZipDJ's own |
 
-ZipDJ's own keys keep working: ↑ and ↓ select, ← and → select and play, Enter plays the selected track, Space plays or pauses. Both sets act on the same selected row. No key does anything while you type in the search box.
+ZipDJ's own keys keep working: ↑ and ↓ select, ← and → select and play, Enter plays the selected track, Space plays or pauses. Both sets act on the same selected row. J and K skip tracks hidden by **Hide downloaded**. The script's keys do nothing while you type in the search box.
 
 On a release's own page, J and K select a track, but ZipDJ's own keys don't work there, so Enter does not play it.
 
@@ -57,7 +77,7 @@ On the search results page, a space typed right after a letter no longer disappe
 
 ## Status
 
-Version 1.2.0, 18 November 2026. It was tested by injection in Chrome. Version 1.0.0, the first public release, was also tested with Violentmonkey in Firefox.
+Version 1.5.0, 18 November 2026. It was tested by injection in Chrome. Version 1.0.0, the first public release, was also tested with Violentmonkey in Firefox.
 
 ## Install
 
@@ -73,6 +93,7 @@ The script depends on how ZipDJ builds its pages. A redesign can break it withou
 
 - No line starting with `[ZipDJ fixes]`: the manager doesn't run the script. Check that it is enabled.
 - `[ZipDJ fixes] running`, but never `details known for …`: ZipDJ has probably changed how it loads track lists and the history.
+- Downloaded tracks aren't dimmed and there is no `downloaded tracks known`: ZipDJ has probably changed how it loads what you have downloaded.
 - No `labels known for … tracks in the download manager`: ZipDJ has probably changed how it loads the download manager.
 
 Please [open an issue](https://github.com/thomaswening/zipdj-fixes/issues) with what you see.
