@@ -487,15 +487,17 @@
   const ROOMY_DOWNLOAD_MANAGER_FONT_SIZE = '12px';
   const ROOMY_DOWNLOAD_MANAGER_LINE_HEIGHT = '1.5';
 
+  // Track lists and the download history both live in this container. Each of their rows
+  // holds a table of its own, apart from the header row's table.
   const TRACK_LIST_SCOPE = '.zd-track-view';
-  const TRACK_ROW_SELECTOR = 'tr.zdtrackslist';
+  const BODY_ROW_TABLE_SELECTOR = 'table.zd-body-row-table';
 
   // The app sets these sizes with "!important", so the script has to as well.
   function addRoomyStyles() {
     const style = document.createElement('style');
     style.textContent = `
       ${TRACK_LIST_SCOPE} table.zd-inner-table td { font-size: ${ROOMY_FONT_SIZE} !important; }
-      ${TRACK_LIST_SCOPE} ${TRACK_ROW_SELECTOR} > td {
+      ${TRACK_LIST_SCOPE} ${BODY_ROW_TABLE_SELECTOR} > tbody > tr > td {
         height: ${ROOMY_ROW_HEIGHT} !important; white-space: nowrap;
       }
       ${TRACK_LIST_SCOPE} .zd-label { width: ${ROOMY_LABEL_COLUMN_WIDTH} !important; }
