@@ -1,8 +1,9 @@
 # ZipDJ fixes
 
-A userscript for members of [ZipDJ](https://www.zipdj.com), the DJ record pool. It fixes annoyances in ZipDJ's member web app, in five places:
+A userscript for members of [ZipDJ](https://www.zipdj.com), the DJ record pool. It fixes annoyances in ZipDJ's member web app, in six places:
 
 - [Track lists](#track-lists): title and mix apart from the release
+- [Downloaded tracks](#downloaded-tracks): dimmed or hidden in track lists
 - [Roomier look](#roomier-look): taller rows, larger text, wider Label and Genre columns
 - [Download manager](#download-manager): links to release, artist and label
 - [Download history](#download-history): a Label column and real links
@@ -17,6 +18,18 @@ The script sends no requests of its own. It reads titles, releases and labels fr
 ZipDJ shows a track as its release's name followed by the mix, so an EP track reads "Musica (EP) One More Time (Extended Mix)". The script shows the title with its mix in brackets, **One More Time (Extended Mix)**, and adds a Release column. A click on a release opens it. For a single, a suffix such as "(Incl. Osadon Remix)" is left out of the title.
 
 ![A ZipDJ track list of the label 8bit: each title is followed by its mix in brackets, such as "One More Time (Extended Mix)", and the added Release column shows "Musica (EP)"](docs/images/track-list-release-column.png)
+
+### Downloaded tracks
+
+Track lists dim the tracks you have already downloaded, so new ones stand out when you go through a label or an artist. Hovering a row shows it in full again. ZipDJ's own sign is easy to miss: it only leaves out the download arrow. The replay icon in place of the play icon means you have played the track, not downloaded it. The download history isn't dimmed, since every track there is downloaded.
+
+A track you download now is dimmed the next time its list loads.
+
+To leave downloaded tracks out altogether, click **Hide downloaded** next to Genre Filter. The button then reads **Show downloaded** and brings them back. Your browser remembers the choice for every list. A page then shows fewer than its usual 50 tracks, since ZipDJ still counts the hidden ones.
+
+![A ZipDJ track list of the label 8bit: the downloaded tracks, such as "Mother (Extended Mix)" and "Musica (Extended Mix)", are dimmed, while the others, such as "Mother (Osadon Remix)", are shown in full](docs/images/track-list-downloaded-dimmed.png)
+
+![The same list with downloaded tracks hidden: the button next to Genre Filter reads "Show downloaded", and the list goes straight from "Mother (Osadon Remix)" to "Tribe (Malikk Remix)"](docs/images/track-list-downloaded-hidden.png)
 
 ### Roomier look
 
@@ -44,7 +57,7 @@ On the search results page, a space typed right after a letter no longer disappe
 
 ## Status
 
-Version 1.2.0, 18 November 2026. Versions 1.1.0 and 1.2.0 were tested by injection in Chrome. Version 1.0.0, the first public release, was also tested with Violentmonkey in Firefox.
+Version 1.4.0, 18 November 2026. It was tested by injection in Chrome. Version 1.0.0, the first public release, was also tested with Violentmonkey in Firefox.
 
 ## Install
 
@@ -60,6 +73,7 @@ The script depends on how ZipDJ builds its pages. A redesign can break it withou
 
 - No line starting with `[ZipDJ fixes]`: the manager doesn't run the script. Check that it is enabled.
 - `[ZipDJ fixes] running`, but never `details known for …`: ZipDJ has probably changed how it loads track lists and the history.
+- Downloaded tracks aren't dimmed and there is no `downloaded tracks known`: ZipDJ has probably changed how it loads what you have downloaded.
 - No `labels known for … tracks in the download manager`: ZipDJ has probably changed how it loads the download manager.
 
 Please [open an issue](https://github.com/thomaswening/zipdj-fixes/issues) with what you see.

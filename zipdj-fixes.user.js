@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         ZipDJ fixes
 // @namespace    https://github.com/thomaswening
-// @version      1.2.0
-// @description  Track lists: title and mix apart from the release, roomier rows and columns. Download manager: links to release, artist and label. Download history: a Label column and titles as real links. Search: keeps the space you just typed.
+// @version      1.4.0
+// @description  Track lists: title and mix apart from the release, downloaded tracks dimmed or hidden, roomier rows and columns. Download manager: links to release, artist and label. Download history: a Label column and titles as real links. Search: keeps the space you just typed.
 // @author       thomaswening
 // @license      GPL-3.0-or-later
 // @homepageURL  https://github.com/thomaswening/zipdj-fixes
@@ -21,6 +21,7 @@
 //   answer holds the label, the release and, for an EP, the track title apart from the mix.
 //   The download manager loads its own list, which holds the label. The script listens to
 //   both answers. It cannot ask by itself: Cloudflare blocks such requests.
+// - For each track list, ZipDJ also loads which of its tracks the member has downloaded.
 // - It runs in the page itself ("@grant none", "@inject-into page"), where the app's
 //   XMLHttpRequest and fetch live, and starts as early as it can to see the first request.
 // - It adds its own elements next to the app's and hides the app's with CSS instead of
@@ -34,6 +35,7 @@
   const LOG_PREFIX = '[ZipDJ fixes]';
   const TRACK_SEARCH_URL_PATTERN = /\/manage-elasticsearch\/zipdj-user-tracks-[^/]+\/_search/;
   const DOWNLOAD_MANAGER_URL_PATTERN = /\/api\/zdmapi\/download-manager(?:[?#]|$)/;
+  const USER_TRACK_DATA_URL_PATTERN = /\/api\/zdmapi\/get-user-track-data(?:[?#]|$)/;
   const SINGLE_RELEASE_TYPE = 'single';
   // A single is often named after its title plus what it contains, as in "Mother (Incl.
   // Osadon Remix)" or "Mother (Remixes)". That suffix is no part of the track's title.
@@ -52,6 +54,11 @@
   const DOWNLOAD_MANAGER_ROW_SELECTOR = 'li.zd-dm-row';
   const DOWNLOAD_MANAGER_APP_INFO_SELECTOR = ':scope > a.album-title';
   const SEARCH_INPUT_SELECTOR = 'input[placeholder^="Search for Tracks"]';
+  // Above a track list, the genre tabs and the bar with Genre Filter, Key and BPM.
+  const LIST_FILTER_BARS_SELECTOR = '.zd-v5-tp-down-filter > .d-flex';
+  const APP_FILTER_DROPDOWN_SELECTOR = '.zd-dropdown';
+  // The look of the app's own buttons in that bar.
+  const APP_FILTER_BUTTON_CLASSES = 'zd-top-dropdown top-downloads-filter-btn zd_v5 btn btn-secondary';
 
   // The app's own colour classes, so added text matches the text next to it.
   const APP_BRIGHT_TEXT_CLASS = 'zd-text-dddddd';
@@ -70,6 +77,13 @@
   const IN_APP_LINK_ATTRIBUTE = 'data-zdx-in-app';
   const SHOWN_TRACK_ATTRIBUTE = 'data-zdx-shown';
   const GUARDED_ATTRIBUTE = 'data-zdx-guarded';
+  const DOWNLOADED_ROW_CLASS = 'zdx-downloaded';
+  const DOWNLOADED_ROW_OPACITY = 0.4;
+  const HIDE_DOWNLOADED_CLASS = 'zdx-hide-downloaded';
+  const HIDE_DOWNLOADED_TOGGLE_CLASS = 'zdx-hide-downloaded-toggle';
+  const HIDE_DOWNLOADED_STORAGE_KEY = 'zdx-hide-downloaded';
+  const HIDE_DOWNLOADED_TEXT = 'Hide downloaded';
+  const SHOW_DOWNLOADED_TEXT = 'Show downloaded';
   const MIDDLE_MOUSE_BUTTON = 1;
   const RELEASE_HEADER_TEXT = 'Release';
   // A fixed width: the app's columns use percentages that already add up to the whole
@@ -84,6 +98,9 @@
    *   releaseType?: string, trackTitle?: string, trackMix?: string}>}
    */
   const tracksById = new Map();
+  // Kept apart from tracksById: a track found there counts as known to the title and
+  // Release column, which this answer, holding no titles, must not change.
+  const downloadedTrackIds = new Set();
   let typedSearchText = null;
 
   // ---- What ZipDJ's answers say ----------------------------------------------------------
@@ -138,9 +155,24 @@
     onPageChanged();
   }
 
+  // The answer lists each track of the list with flags 0 or 1, as in
+  // {track_id: "1327324", is_track_downloaded: 1, is_track_previewed: 1, ...}.
+  function rememberDownloadedTracks(responseText) {
+    const entries = parseJson(responseText);
+    if (!Array.isArray(entries)) return;
+    for (const entry of entries) {
+      const trackId = String(entry.track_id);
+      if (entry.is_track_downloaded) downloadedTrackIds.add(trackId);
+      else downloadedTrackIds.delete(trackId);
+    }
+    console.info(LOG_PREFIX, `${downloadedTrackIds.size} downloaded tracks known`);
+    onPageChanged();
+  }
+
   const responseListeners = [
     { urlPattern: TRACK_SEARCH_URL_PATTERN, listener: rememberSearchedTracks },
     { urlPattern: DOWNLOAD_MANAGER_URL_PATTERN, listener: rememberDownloadManagerTracks },
+    { urlPattern: USER_TRACK_DATA_URL_PATTERN, listener: rememberDownloadedTracks },
   ];
 
   function listenerFor(url) {
@@ -369,6 +401,85 @@
     addListReleaseHeaders(titleHeaders);
   }
 
+  // ---- Track lists: downloaded tracks dimmed --------------------------------------------
+
+  // Sets the class on every pass, since the app reuses a row for another track. ZipDJ's own
+  // sign of a download, a missing download arrow, is easy to overlook.
+  function dimDownloadedRows() {
+    for (const playLink of document.querySelectorAll(PLAY_LINK_SELECTOR)) {
+      // In the history every track is downloaded, so dimming its rows would tell nothing.
+      // A history row holds a table of its own, so its play link sits in an inner row.
+      // The download manager's rows are list items, not table rows.
+      const row = playLink.closest('tr');
+      if (!row || playLink.closest(HISTORY_ROW_SELECTOR)) continue;
+      row.classList.toggle(DOWNLOADED_ROW_CLASS, downloadedTrackIds.has(playLink.dataset.id));
+    }
+  }
+
+  // ---- Track lists: downloaded tracks hidden on request ----------------------------------
+
+  // The choice is kept in the browser, so it holds for every list until changed. Storage can
+  // be blocked, as in some private windows; then the choice holds until the page reloads.
+  function readHideDownloaded() {
+    try {
+      return localStorage.getItem(HIDE_DOWNLOADED_STORAGE_KEY) === 'true';
+    } catch {
+      return false;
+    }
+  }
+
+  function storeHideDownloaded(hide) {
+    try {
+      localStorage.setItem(HIDE_DOWNLOADED_STORAGE_KEY, String(hide));
+    } catch {
+      // The choice still holds until the page reloads.
+    }
+  }
+
+  let hideDownloaded = readHideDownloaded();
+
+  function updateHideDownloadedToggle(toggle) {
+    const text = hideDownloaded ? SHOW_DOWNLOADED_TEXT : HIDE_DOWNLOADED_TEXT;
+    // Writing the same text again would wake the page observer for nothing.
+    if (toggle.textContent !== text) toggle.textContent = text;
+    toggle.setAttribute('aria-pressed', String(hideDownloaded));
+  }
+
+  // The class on the root element hides the rows by CSS, so rows the app draws later are
+  // hidden too.
+  function applyHideDownloaded() {
+    document.documentElement.classList.toggle(HIDE_DOWNLOADED_CLASS, hideDownloaded);
+    document.querySelectorAll(`.${HIDE_DOWNLOADED_TOGGLE_CLASS}`).forEach(updateHideDownloadedToggle);
+  }
+
+  function toggleHideDownloaded(event) {
+    event.preventDefault();
+    event.stopPropagation();
+    hideDownloaded = !hideDownloaded;
+    storeHideDownloaded(hideDownloaded);
+    applyHideDownloaded();
+  }
+
+  function createHideDownloadedToggle() {
+    const toggle = document.createElement('button');
+    toggle.type = 'button';
+    toggle.className = `${APP_FILTER_BUTTON_CLASSES} ${HIDE_DOWNLOADED_TOGGLE_CLASS}`;
+    toggle.addEventListener('click', toggleHideDownloaded);
+    updateHideDownloadedToggle(toggle);
+    const holder = document.createElement('div');
+    holder.className = `mr-2 ${OWN_ELEMENT_CLASS}`;
+    holder.appendChild(toggle);
+    return holder;
+  }
+
+  function addHideDownloadedToggles() {
+    for (const filterBar of document.querySelectorAll(LIST_FILTER_BARS_SELECTOR)) {
+      if (!filterBar.querySelector(APP_FILTER_DROPDOWN_SELECTOR)) continue;
+      if (filterBar.querySelector(`.${HIDE_DOWNLOADED_TOGGLE_CLASS}`)) continue;
+      filterBar.prepend(createHideDownloadedToggle());
+    }
+  }
+
   // ---- Download manager ------------------------------------------------------------------
 
   function parseArtists(playLink) {
@@ -537,6 +648,9 @@
         color: #627a85;
       }
       .${DOWNLOAD_MANAGER_LINE_CLASS}:first-child { color: #ddd; font-weight: 500; }
+      tr.${DOWNLOADED_ROW_CLASS} { opacity: ${DOWNLOADED_ROW_OPACITY}; }
+      tr.${DOWNLOADED_ROW_CLASS}:hover { opacity: 1; }
+      .${HIDE_DOWNLOADED_CLASS} tr.${DOWNLOADED_ROW_CLASS} { display: none !important; }
     `;
     document.head.appendChild(style);
   }
@@ -544,6 +658,8 @@
   function onPageChanged() {
     enhanceHistory();
     enhanceTrackLists();
+    dimDownloadedRows();
+    addHideDownloadedToggles();
     enhanceDownloadManager();
     guardSearchInputs();
   }
@@ -552,6 +668,7 @@
   function startWhenDocumentIsReady() {
     addStyles();
     addRoomyStyles();
+    applyHideDownloaded();
     onPageChanged();
     new MutationObserver(onPageChanged).observe(document.body, { childList: true, subtree: true });
   }
