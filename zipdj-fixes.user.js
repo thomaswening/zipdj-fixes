@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         ZipDJ fixes
 // @namespace    https://github.com/thomaswening
-// @version      1.1.0
-// @description  Track lists: title and mix apart from the release. Download manager: links to release, artist and label. Download history: a Label column and titles as real links. Search: keeps the space you just typed.
+// @version      1.2.0
+// @description  Track lists: title and mix apart from the release, downloaded tracks dimmed. Download manager: links to release, artist and label. Download history: a Label column and titles as real links. Search: keeps the space you just typed.
 // @author       thomaswening
 // @license      GPL-3.0-or-later
 // @homepageURL  https://github.com/thomaswening/zipdj-fixes
@@ -21,6 +21,7 @@
 //   answer holds the label, the release and, for an EP, the track title apart from the mix.
 //   The download manager loads its own list, which holds the label. The script listens to
 //   both answers. It cannot ask by itself: Cloudflare blocks such requests.
+// - For each track list, ZipDJ also loads which of its tracks the member has downloaded.
 // - It runs in the page itself ("@grant none", "@inject-into page"), where the app's
 //   XMLHttpRequest and fetch live, and starts as early as it can to see the first request.
 // - It adds its own elements next to the app's and hides the app's with CSS instead of
@@ -34,6 +35,7 @@
   const LOG_PREFIX = '[ZipDJ fixes]';
   const TRACK_SEARCH_URL_PATTERN = /\/manage-elasticsearch\/zipdj-user-tracks-[^/]+\/_search/;
   const DOWNLOAD_MANAGER_URL_PATTERN = /\/api\/zdmapi\/download-manager(?:[?#]|$)/;
+  const USER_TRACK_DATA_URL_PATTERN = /\/api\/zdmapi\/get-user-track-data(?:[?#]|$)/;
   const SINGLE_RELEASE_TYPE = 'single';
   // A single is often named after its title plus what it contains, as in "Mother (Incl.
   // Osadon Remix)" or "Mother (Remixes)". That suffix is no part of the track's title.
@@ -41,6 +43,8 @@
 
   const PLAY_LINK_SELECTOR = 'a.zd-item-play';
   const HISTORY_ROW_SELECTOR = 'tr.zd-row-downloadhistory[data-tr-id]';
+  // In the history every track is downloaded, so dimming its rows would tell nothing.
+  const LIST_ROW_PLAY_LINK_SELECTOR = `tr:not(.zd-row-downloadhistory) ${PLAY_LINK_SELECTOR}`;
   const HISTORY_TITLE_CELL_SELECTOR = 'td.zd-title-d-h';
   const HISTORY_GENRE_CELL_SELECTOR = 'td.zd-label';
   const GENRE_HEADER_TEXT = 'Genre';
@@ -70,6 +74,8 @@
   const IN_APP_LINK_ATTRIBUTE = 'data-zdx-in-app';
   const SHOWN_TRACK_ATTRIBUTE = 'data-zdx-shown';
   const GUARDED_ATTRIBUTE = 'data-zdx-guarded';
+  const DOWNLOADED_ROW_CLASS = 'zdx-downloaded';
+  const DOWNLOADED_ROW_OPACITY = 0.4;
   const MIDDLE_MOUSE_BUTTON = 1;
   const RELEASE_HEADER_TEXT = 'Release';
   // A fixed width: the app's columns use percentages that already add up to the whole
@@ -84,6 +90,9 @@
    *   releaseType?: string, trackTitle?: string, trackMix?: string}>}
    */
   const tracksById = new Map();
+  // Kept apart from tracksById: a track found there counts as known to the title and
+  // Release column, which this answer, holding no titles, must not change.
+  const downloadedTrackIds = new Set();
   let typedSearchText = null;
 
   // ---- What ZipDJ's answers say ----------------------------------------------------------
@@ -138,9 +147,24 @@
     onPageChanged();
   }
 
+  // The answer lists each track of the list with flags 0 or 1, as in
+  // {track_id: "1327324", is_track_downloaded: 1, is_track_previewed: 1, ...}.
+  function rememberDownloadedTracks(responseText) {
+    const entries = parseJson(responseText);
+    if (!Array.isArray(entries)) return;
+    for (const entry of entries) {
+      const trackId = String(entry.track_id);
+      if (entry.is_track_downloaded) downloadedTrackIds.add(trackId);
+      else downloadedTrackIds.delete(trackId);
+    }
+    console.info(LOG_PREFIX, `${downloadedTrackIds.size} downloaded tracks known`);
+    onPageChanged();
+  }
+
   const responseListeners = [
     { urlPattern: TRACK_SEARCH_URL_PATTERN, listener: rememberSearchedTracks },
     { urlPattern: DOWNLOAD_MANAGER_URL_PATTERN, listener: rememberDownloadManagerTracks },
+    { urlPattern: USER_TRACK_DATA_URL_PATTERN, listener: rememberDownloadedTracks },
   ];
 
   function listenerFor(url) {
@@ -369,6 +393,17 @@
     addListReleaseHeaders(titleHeaders);
   }
 
+  // ---- Track lists: downloaded tracks dimmed --------------------------------------------
+
+  // Sets the class on every pass, since the app reuses a row for another track. ZipDJ's own
+  // sign of a download, a missing download arrow, is easy to overlook.
+  function dimDownloadedRows() {
+    for (const playLink of document.querySelectorAll(LIST_ROW_PLAY_LINK_SELECTOR)) {
+      const row = playLink.closest('tr');
+      row.classList.toggle(DOWNLOADED_ROW_CLASS, downloadedTrackIds.has(playLink.dataset.id));
+    }
+  }
+
   // ---- Download manager ------------------------------------------------------------------
 
   function parseArtists(playLink) {
@@ -495,6 +530,8 @@
         color: #627a85;
       }
       .${DOWNLOAD_MANAGER_LINE_CLASS}:first-child { color: #ddd; font-weight: 500; }
+      tr.${DOWNLOADED_ROW_CLASS} { opacity: ${DOWNLOADED_ROW_OPACITY}; }
+      tr.${DOWNLOADED_ROW_CLASS}:hover { opacity: 1; }
     `;
     document.head.appendChild(style);
   }
@@ -502,6 +539,7 @@
   function onPageChanged() {
     enhanceHistory();
     enhanceTrackLists();
+    dimDownloadedRows();
     enhanceDownloadManager();
     guardSearchInputs();
   }
