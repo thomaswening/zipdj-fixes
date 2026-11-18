@@ -72,6 +72,9 @@
   const GUARDED_ATTRIBUTE = 'data-zdx-guarded';
   const MIDDLE_MOUSE_BUTTON = 1;
   const RELEASE_HEADER_TEXT = 'Release';
+  // A fixed width: the app's columns use percentages that already add up to the whole
+  // table, so a percentage here would be squeezed to almost nothing.
+  const RELEASE_COLUMN_WIDTH = '160px';
   const LABEL_HEADER_TEXT = 'Label';
 
   /**
@@ -331,21 +334,21 @@
     row.setAttribute(SHOWN_TRACK_ATTRIBUTE, key);
   }
 
-  // The header row lives in a table of its own. Its Release cell copies the Artist cell's
-  // look.
+  // The header row lives in a table of its own, where the title comes before the cover and
+  // play cells. So the Release cell goes before the Artist cell, whose look it copies.
   function addListReleaseHeader() {
     const titleHeaders = [...document.querySelectorAll(LIST_TITLE_CELL_SELECTOR)].filter(
       (cell) => cell.textContent.trim() === LIST_TITLE_HEADER_TEXT,
     );
     for (const titleHeader of titleHeaders) {
-      if (titleHeader.nextElementSibling?.classList.contains(RELEASE_CELL_CLASS)) continue;
       const artistHeader = titleHeader.parentElement.querySelector(LIST_ARTIST_HEADER_SELECTOR);
       if (!artistHeader) continue;
+      if (artistHeader.previousElementSibling?.classList.contains(RELEASE_CELL_CLASS)) continue;
       const header = artistHeader.cloneNode(true);
       header.className = `zd-text-ellipsis ${RELEASE_CELL_CLASS}`;
       const textHolder = header.querySelector('a') || header;
       textHolder.textContent = RELEASE_HEADER_TEXT;
-      titleHeader.after(header);
+      artistHeader.before(header);
     }
   }
 
@@ -470,7 +473,7 @@
     style.textContent = `
       .${LINK_CLASS}[${IN_APP_LINK_ATTRIBUTE}] { color: inherit; }
       .${LINK_CLASS}[${IN_APP_LINK_ATTRIBUTE}]:hover { text-decoration: underline; }
-      .${RELEASE_CELL_CLASS} { width: 16%; }
+      .${RELEASE_CELL_CLASS} { width: ${RELEASE_COLUMN_WIDTH}; }
       .${SPLIT_TITLE_CLASS} .release-name, .${SPLIT_TITLE_CLASS} .track-name { display: none !important; }
       .${TITLE_TEXT_CLASS} { font-weight: 600; }
       .${DOWNLOAD_MANAGER_ROW_CLASS} > a.album-title { display: none !important; }
