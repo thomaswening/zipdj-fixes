@@ -630,14 +630,15 @@
     if (row && row.querySelector(PLAY_LINK_SELECTOR)) selectRow(row);
   }
 
+  // The app paints the selected row's cells with "!important" rules of four classes. The
+  // repeated class outranks them without depending on the order of the style sheets.
   function addShortcutStyles() {
+    const selectedCells = `${TRACK_ROW_SELECTOR}${`.${APP_SELECTED_ROW_CLASS}`.repeat(4)} > td`;
     const style = document.createElement('style');
     style.textContent = `
       ${TRACK_ROW_SELECTOR} { scroll-margin: ${ROW_SCROLL_MARGIN} 0; }
-      ${TRACK_ROW_SELECTOR}.${APP_SELECTED_ROW_CLASS} {
-        background: ${SELECTED_ROW_BACKGROUND} !important;
-        box-shadow: inset 3px 0 0 ${APP_ACCENT_COLOUR};
-      }
+      ${selectedCells} { background: ${SELECTED_ROW_BACKGROUND} !important; }
+      ${selectedCells}:first-child { box-shadow: inset 3px 0 0 ${APP_ACCENT_COLOUR}; }
       .${SHORTCUTS_OVERLAY_CLASS} {
         position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 10000;
         display: flex; gap: 32px; padding: 20px 28px; border-radius: 8px;
