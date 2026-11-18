@@ -1,8 +1,9 @@
 # ZipDJ fixes
 
-A userscript for members of [ZipDJ](https://www.zipdj.com), the DJ record pool. It fixes annoyances in ZipDJ's member web app, in four places:
+A userscript for members of [ZipDJ](https://www.zipdj.com), the DJ record pool. It fixes annoyances in ZipDJ's member web app, in five places:
 
 - [Track lists](#track-lists): title and mix apart from the release
+- [Roomier look](#roomier-look): taller rows, larger text, wider Label and Genre columns
 - [Download manager](#download-manager): links to release, artist and label
 - [Download history](#download-history): a Label column and real links
 - [Search box](#search-box): keeps the space you just typed
@@ -16,6 +17,12 @@ The script sends no requests of its own. It reads titles, releases and labels fr
 ZipDJ shows a track as its release's name followed by the mix, so an EP track reads "Musica (EP) One More Time (Extended Mix)". The script shows the title with its mix in brackets, **One More Time (Extended Mix)**, and adds a Release column. A click on a release opens it. For a single, a suffix such as "(Incl. Osadon Remix)" is left out of the title.
 
 ![A ZipDJ track list of the label 8bit: each title is followed by its mix in brackets, such as "One More Time (Extended Mix)", and the added Release column shows "Musica (EP)"](docs/images/track-list-release-column.png)
+
+### Roomier look
+
+Track lists and the download history get taller rows (48 instead of 40 pixels) and slightly larger text. The Label and Genre columns get a larger share of the width, so most labels and genres fit. While the download manager is open, track lists hide the Released column to leave the other columns more room. The download manager's entries get larger text and more space between lines. ZipDJ's colours and fonts stay as they are.
+
+![ZipDJ's New Releases with the download manager open: taller rows, labels such as "Must Make Music" in a wider Label column, no Released column, and download manager entries on three spaced lines](docs/images/roomier-track-list.png)
 
 ### Download manager
 
@@ -37,7 +44,7 @@ On the search results page, a space typed right after a letter no longer disappe
 
 ## Status
 
-Version 1.1.0, 18 November 2026. It was tested by injection in Chrome. Version 1.0.0, the first public release, was also tested with Violentmonkey in Firefox.
+Version 1.2.0, 18 November 2026. Versions 1.1.0 and 1.2.0 were tested by injection in Chrome. Version 1.0.0, the first public release, was also tested with Violentmonkey in Firefox.
 
 ## Install
 
