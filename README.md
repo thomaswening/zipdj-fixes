@@ -3,7 +3,7 @@
 A userscript for members of [ZipDJ](https://www.zipdj.com), the DJ record pool. It fixes annoyances in ZipDJ's member web app, in five places:
 
 - [Track lists](#track-lists): title and mix apart from the release
-- [Downloaded tracks](#downloaded-tracks): dimmed in track lists
+- [Downloaded tracks](#downloaded-tracks): dimmed or hidden in track lists
 - [Download manager](#download-manager): links to release, artist and label
 - [Download history](#download-history): a Label column and real links
 - [Search box](#search-box): keeps the space you just typed
@@ -24,7 +24,11 @@ Track lists dim the tracks you have already downloaded, so new ones stand out wh
 
 A track you download now is dimmed the next time its list loads.
 
+To leave downloaded tracks out altogether, click **Hide downloaded** next to Genre Filter. The button then reads **Show downloaded** and brings them back. Your browser remembers the choice for every list. A page then shows fewer than its usual 50 tracks, since ZipDJ still counts the hidden ones.
+
 ![A ZipDJ track list of the label 8bit: the downloaded tracks, such as "Mother (Extended Mix)" and "Musica (Extended Mix)", are dimmed, while the others, such as "Mother (Osadon Remix)", are shown in full](docs/images/track-list-downloaded-dimmed.png)
+
+![The same list with downloaded tracks hidden: the button next to Genre Filter reads "Show downloaded", and the list goes straight from "Mother (Osadon Remix)" to "Tribe (Malikk Remix)"](docs/images/track-list-downloaded-hidden.png)
 
 ### Download manager
 
@@ -46,7 +50,7 @@ On the search results page, a space typed right after a letter no longer disappe
 
 ## Status
 
-Version 1.2.0, 18 November 2026. It was tested by injection in Chrome. Version 1.0.0, the first public release, was also tested with Violentmonkey in Firefox.
+Version 1.3.0, 18 November 2026. It was tested by injection in Chrome. Version 1.0.0, the first public release, was also tested with Violentmonkey in Firefox.
 
 ## Install
 
