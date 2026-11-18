@@ -74,7 +74,7 @@
   const RELEASE_HEADER_TEXT = 'Release';
   // A fixed width: the app's columns use percentages that already add up to the whole
   // table, so a percentage here would be squeezed to almost nothing.
-  const RELEASE_COLUMN_WIDTH = '160px';
+  const RELEASE_COLUMN_WIDTH = '140px';
   const LABEL_HEADER_TEXT = 'Label';
 
   /**
@@ -379,7 +379,7 @@
 
   function createLine(...children) {
     const line = document.createElement('span');
-    line.className = `${DOWNLOAD_MANAGER_LINE_CLASS} zd-text-ellipsis`;
+    line.className = DOWNLOAD_MANAGER_LINE_CLASS;
     line.append(...children);
     return line;
   }
@@ -490,9 +490,11 @@
         display: flex; flex-direction: column; flex: 1 1 auto; min-width: 0;
         font-size: 11px; line-height: 1.4;
       }
-      .${DOWNLOAD_MANAGER_INFO_CLASS} .${DOWNLOAD_MANAGER_LINE_CLASS} { display: block; }
-      .${DOWNLOAD_MANAGER_INFO_CLASS} .${DOWNLOAD_MANAGER_LINE_CLASS}:first-child { color: #fff; }
-      .${DOWNLOAD_MANAGER_INFO_CLASS} .${DOWNLOAD_MANAGER_LINE_CLASS}:not(:first-child) { color: #627a85; }
+      .${DOWNLOAD_MANAGER_LINE_CLASS} {
+        display: block; overflow: hidden; white-space: nowrap; text-overflow: ellipsis;
+        color: #627a85;
+      }
+      .${DOWNLOAD_MANAGER_LINE_CLASS}:first-child { color: #ddd; font-weight: 500; }
     `;
     document.head.appendChild(style);
   }
