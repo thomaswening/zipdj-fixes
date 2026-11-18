@@ -8,6 +8,10 @@ A userscript for members of [ZipDJ](https://www.zipdj.com), the DJ record pool. 
 - **Real links in the download history.** Track titles become links. Middle-click or Ctrl+click opens the release in a new tab, so the history keeps its place and doesn't reload.
 - **Spaces in the search box.** On the search results page, a space typed right after a letter no longer disappears.
 
+![A ZipDJ track list of the label 8bit: each title is followed by its mix in brackets, such as "One More Time (Extended Mix)", and the added Release column shows "Musica (EP)"](docs/images/track-list-release-column.png)
+
+![ZipDJ's download manager: each entry shows its title and mix, its artist and its label on three lines, such as "Tribe (Malikk Remix)", Mathias Kaden, 8bit](docs/images/download-manager-links.png)
+
 ![ZipDJ's download history with the added Label column between Genre and Date, showing labels such as Intangible, Axtone and d:vision](docs/images/download-history-labels.png)
 
 The script sends no requests of its own. It reads titles, releases and labels from data ZipDJ's pages already load. It changes only how pages look and behave in your own browser.
