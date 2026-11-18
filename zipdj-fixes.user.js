@@ -397,10 +397,11 @@
   // sign of a download, a missing download arrow, is easy to overlook.
   function dimDownloadedRows() {
     for (const playLink of document.querySelectorAll(PLAY_LINK_SELECTOR)) {
-      const row = playLink.closest('tr');
       // In the history every track is downloaded, so dimming its rows would tell nothing.
+      // A history row holds a table of its own, so its play link sits in an inner row.
       // The download manager's rows are list items, not table rows.
-      if (!row || row.matches(HISTORY_ROW_SELECTOR)) continue;
+      const row = playLink.closest('tr');
+      if (!row || playLink.closest(HISTORY_ROW_SELECTOR)) continue;
       row.classList.toggle(DOWNLOADED_ROW_CLASS, downloadedTrackIds.has(playLink.dataset.id));
     }
   }
