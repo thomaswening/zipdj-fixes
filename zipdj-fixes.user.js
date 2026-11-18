@@ -641,7 +641,6 @@
     style.textContent = `
       ${TRACK_ROW_SELECTOR} { scroll-margin: ${ROW_SCROLL_MARGIN} 0; }
       ${selectedCells} { box-shadow: ${tint}; }
-      ${selectedCells}:first-child { box-shadow: inset 3px 0 0 ${APP_ACCENT_COLOUR}, ${tint}; }
       .${SHORTCUTS_OVERLAY_CLASS} {
         position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 10000;
         display: flex; gap: 32px; padding: 20px 28px; border-radius: 8px;
