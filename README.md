@@ -1,20 +1,39 @@
 # ZipDJ fixes
 
-A userscript for members of [ZipDJ](https://www.zipdj.com), the DJ record pool. It fixes five annoyances in ZipDJ's member web app:
+A userscript for members of [ZipDJ](https://www.zipdj.com), the DJ record pool. It fixes annoyances in ZipDJ's member web app, in four places:
 
-- **Title, mix and release apart in track lists.** ZipDJ shows a track as its release's name followed by the mix, so an EP track reads "Musica (EP) One More Time (Extended Mix)". The script shows the title with its mix in brackets, "One More Time (Extended Mix)", and adds a Release column. A click on a release opens it. For a single, a suffix such as "(Incl. Osadon Remix)" is left out of the title.
-- **Links in the download manager.** Each entry links its release, each of its artists and its label, which is added as a third line. For an EP track, the entry shows the track's own title when the track has appeared in a list since the page was loaded. Otherwise it shows the release's name, as ZipDJ does.
-- **Labels in the download history.** The history gets a Label column. A click on a label lists all of that label's tracks. The label is shown on each track page, but the history doesn't show it.
-- **Real links in the download history.** Track titles become links. Middle-click or Ctrl+click opens the release in a new tab, so the history keeps its place and doesn't reload.
-- **Spaces in the search box.** On the search results page, a space typed right after a letter no longer disappears.
+- [Track lists](#track-lists): title and mix apart from the release
+- [Download manager](#download-manager): links to release, artist and label
+- [Download history](#download-history): a Label column and real links
+- [Search box](#search-box): keeps the space you just typed
+
+The script sends no requests of its own. It reads titles, releases and labels from data ZipDJ's pages already load. It changes only how pages look and behave in your own browser.
+
+## What it fixes
+
+### Track lists
+
+ZipDJ shows a track as its release's name followed by the mix, so an EP track reads "Musica (EP) One More Time (Extended Mix)". The script shows the title with its mix in brackets, **One More Time (Extended Mix)**, and adds a Release column. A click on a release opens it. For a single, a suffix such as "(Incl. Osadon Remix)" is left out of the title.
 
 ![A ZipDJ track list of the label 8bit: each title is followed by its mix in brackets, such as "One More Time (Extended Mix)", and the added Release column shows "Musica (EP)"](docs/images/track-list-release-column.png)
 
+### Download manager
+
+Each entry links its release, each of its artists and its label, which is added as a third line. For an EP track, the entry shows the track's own title when the track has appeared in a list since the page was loaded. Otherwise it shows the release's name, as ZipDJ does.
+
 ![ZipDJ's download manager: each entry shows its title and mix, its artist and its label on three lines, such as "Tribe (Malikk Remix)", Mathias Kaden, 8bit](docs/images/download-manager-links.png)
+
+### Download history
+
+The history gets a Label column. A click on a label lists all of that label's tracks. ZipDJ shows the label on each track page, but not in the history.
+
+Track titles become real links. Middle-click or Ctrl+click opens the release in a new tab, so the history keeps its place and doesn't reload.
 
 ![ZipDJ's download history with the added Label column between Genre and Date, showing labels such as Intangible, Axtone and d:vision](docs/images/download-history-labels.png)
 
-The script sends no requests of its own. It reads titles, releases and labels from data ZipDJ's pages already load. It changes only how pages look and behave in your own browser.
+### Search box
+
+On the search results page, a space typed right after a letter no longer disappears.
 
 ## Status
 
@@ -24,7 +43,7 @@ Version 1.1.0, 18 November 2026. It was tested by injection in Chrome. Version 1
 
 1. Install a userscript manager: [Violentmonkey](https://violentmonkey.github.io/) (recommended) or Tampermonkey. In Chrome, also turn on **Allow User Scripts** in the extension's details.
 2. Install the script from [Greasy Fork](https://greasyfork.org/scripts/606173-zipdj-fixes) with its install button. Or open [zipdj-fixes.user.js](https://github.com/thomaswening/zipdj-fixes/raw/main/zipdj-fixes.user.js) here on GitHub. The manager offers to install it either way.
-3. Reload ZipDJ and open *Download History* from your account menu.
+3. Reload ZipDJ and open *New Releases*.
 
 The manager checks the address you installed from for new versions. Greasy Fork takes new versions from this repository automatically.
 
