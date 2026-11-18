@@ -17,10 +17,10 @@ Version 1.0.0, first public release, 18 November 2026. It was tested with Violen
 ## Install
 
 1. Install a userscript manager: [Violentmonkey](https://violentmonkey.github.io/) (recommended) or Tampermonkey. In Chrome, also turn on **Allow User Scripts** in the extension's details.
-2. Open [zipdj-fixes.user.js](https://github.com/thomaswening/zipdj-fixes/raw/main/zipdj-fixes.user.js). The manager offers to install it.
+2. Install the script from [Greasy Fork](https://greasyfork.org/scripts/606173-zipdj-fixes) with its install button. Or open [zipdj-fixes.user.js](https://github.com/thomaswening/zipdj-fixes/raw/main/zipdj-fixes.user.js) here on GitHub. The manager offers to install it either way.
 3. Reload ZipDJ and open *Download History* from your account menu.
 
-The manager checks the install address for new versions.
+The manager checks the address you installed from for new versions. Greasy Fork takes new versions from this repository automatically.
 
 ## When it doesn't work
 
