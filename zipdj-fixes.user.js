@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         ZipDJ fixes
 // @namespace    https://github.com/thomaswening
-// @version      1.2.0
-// @description  Track lists: title and mix apart from the release, downloaded tracks dimmed. Download manager: links to release, artist and label. Download history: a Label column and titles as real links. Search: keeps the space you just typed.
+// @version      1.3.0
+// @description  Track lists: title and mix apart from the release, downloaded tracks dimmed or hidden. Download manager: links to release, artist and label. Download history: a Label column and titles as real links. Search: keeps the space you just typed.
 // @author       thomaswening
 // @license      GPL-3.0-or-later
 // @homepageURL  https://github.com/thomaswening/zipdj-fixes
@@ -54,6 +54,10 @@
   const DOWNLOAD_MANAGER_ROW_SELECTOR = 'li.zd-dm-row';
   const DOWNLOAD_MANAGER_APP_INFO_SELECTOR = ':scope > a.album-title';
   const SEARCH_INPUT_SELECTOR = 'input[placeholder^="Search for Tracks"]';
+  // The bar above a track list with Genre Filter, Key and BPM.
+  const LIST_FILTER_BAR_SELECTOR = '.zd-v5-tp-down-filter > .d-flex';
+  // The look of the app's own buttons in that bar.
+  const APP_FILTER_BUTTON_CLASSES = 'zd-top-dropdown top-downloads-filter-btn zd_v5 btn btn-secondary';
 
   // The app's own colour classes, so added text matches the text next to it.
   const APP_BRIGHT_TEXT_CLASS = 'zd-text-dddddd';
@@ -74,6 +78,11 @@
   const GUARDED_ATTRIBUTE = 'data-zdx-guarded';
   const DOWNLOADED_ROW_CLASS = 'zdx-downloaded';
   const DOWNLOADED_ROW_OPACITY = 0.4;
+  const HIDE_DOWNLOADED_CLASS = 'zdx-hide-downloaded';
+  const HIDE_DOWNLOADED_TOGGLE_CLASS = 'zdx-hide-downloaded-toggle';
+  const HIDE_DOWNLOADED_STORAGE_KEY = 'zdx-hide-downloaded';
+  const HIDE_DOWNLOADED_TEXT = 'Hide downloaded';
+  const SHOW_DOWNLOADED_TEXT = 'Show downloaded';
   const MIDDLE_MOUSE_BUTTON = 1;
   const RELEASE_HEADER_TEXT = 'Release';
   // A fixed width: the app's columns use percentages that already add up to the whole
@@ -406,6 +415,69 @@
     }
   }
 
+  // ---- Track lists: downloaded tracks hidden on request ----------------------------------
+
+  // The choice is kept in the browser, so it holds for every list until changed. Storage can
+  // be blocked, as in some private windows; then the choice holds until the page reloads.
+  function readHideDownloaded() {
+    try {
+      return localStorage.getItem(HIDE_DOWNLOADED_STORAGE_KEY) === 'true';
+    } catch {
+      return false;
+    }
+  }
+
+  function storeHideDownloaded(hide) {
+    try {
+      localStorage.setItem(HIDE_DOWNLOADED_STORAGE_KEY, String(hide));
+    } catch {
+      // The choice still holds until the page reloads.
+    }
+  }
+
+  let hideDownloaded = readHideDownloaded();
+
+  function updateHideDownloadedToggle(toggle) {
+    const text = hideDownloaded ? SHOW_DOWNLOADED_TEXT : HIDE_DOWNLOADED_TEXT;
+    // Writing the same text again would wake the page observer for nothing.
+    if (toggle.textContent !== text) toggle.textContent = text;
+    toggle.setAttribute('aria-pressed', String(hideDownloaded));
+  }
+
+  // The class on the root element hides the rows by CSS, so rows the app draws later are
+  // hidden too.
+  function applyHideDownloaded() {
+    document.documentElement.classList.toggle(HIDE_DOWNLOADED_CLASS, hideDownloaded);
+    document.querySelectorAll(`.${HIDE_DOWNLOADED_TOGGLE_CLASS}`).forEach(updateHideDownloadedToggle);
+  }
+
+  function toggleHideDownloaded(event) {
+    event.preventDefault();
+    event.stopPropagation();
+    hideDownloaded = !hideDownloaded;
+    storeHideDownloaded(hideDownloaded);
+    applyHideDownloaded();
+  }
+
+  function createHideDownloadedToggle() {
+    const toggle = document.createElement('button');
+    toggle.type = 'button';
+    toggle.className = `${APP_FILTER_BUTTON_CLASSES} ${HIDE_DOWNLOADED_TOGGLE_CLASS}`;
+    toggle.addEventListener('click', toggleHideDownloaded);
+    updateHideDownloadedToggle(toggle);
+    const holder = document.createElement('div');
+    holder.className = `mr-2 ${OWN_ELEMENT_CLASS}`;
+    holder.appendChild(toggle);
+    return holder;
+  }
+
+  function addHideDownloadedToggles() {
+    for (const filterBar of document.querySelectorAll(LIST_FILTER_BAR_SELECTOR)) {
+      if (filterBar.querySelector(`.${HIDE_DOWNLOADED_TOGGLE_CLASS}`)) continue;
+      filterBar.prepend(createHideDownloadedToggle());
+    }
+  }
+
   // ---- Download manager ------------------------------------------------------------------
 
   function parseArtists(playLink) {
@@ -534,6 +606,7 @@
       .${DOWNLOAD_MANAGER_LINE_CLASS}:first-child { color: #ddd; font-weight: 500; }
       tr.${DOWNLOADED_ROW_CLASS} { opacity: ${DOWNLOADED_ROW_OPACITY}; }
       tr.${DOWNLOADED_ROW_CLASS}:hover { opacity: 1; }
+      .${HIDE_DOWNLOADED_CLASS} tr.${DOWNLOADED_ROW_CLASS} { display: none !important; }
     `;
     document.head.appendChild(style);
   }
@@ -542,6 +615,7 @@
     enhanceHistory();
     enhanceTrackLists();
     dimDownloadedRows();
+    addHideDownloadedToggles();
     enhanceDownloadManager();
     guardSearchInputs();
   }
@@ -549,6 +623,7 @@
   // Works whether the manager starts the script before or after the page has loaded.
   function startWhenDocumentIsReady() {
     addStyles();
+    applyHideDownloaded();
     onPageChanged();
     new MutationObserver(onPageChanged).observe(document.body, { childList: true, subtree: true });
   }
