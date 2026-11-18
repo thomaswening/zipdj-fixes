@@ -1,8 +1,9 @@
 # ZipDJ fixes
 
-A userscript for members of [ZipDJ](https://www.zipdj.com), the DJ record pool. It fixes annoyances in ZipDJ's member web app, in four places:
+A userscript for members of [ZipDJ](https://www.zipdj.com), the DJ record pool. It fixes annoyances in ZipDJ's member web app, in five places:
 
 - [Track lists](#track-lists): title and mix apart from the release
+- [Keyboard shortcuts](#keyboard-shortcuts): keys for track lists, and a visible selection
 - [Download manager](#download-manager): links to release, artist and label
 - [Download history](#download-history): a Label column and real links
 - [Search box](#search-box): keeps the space you just typed
@@ -16,6 +17,25 @@ The script sends no requests of its own. It reads titles, releases and labels fr
 ZipDJ shows a track as its release's name followed by the mix, so an EP track reads "Musica (EP) One More Time (Extended Mix)". The script shows the title with its mix in brackets, **One More Time (Extended Mix)**, and adds a Release column. A click on a release opens it. For a single, a suffix such as "(Incl. Osadon Remix)" is left out of the title.
 
 ![A ZipDJ track list of the label 8bit: each title is followed by its mix in brackets, such as "One More Time (Extended Mix)", and the added Release column shows "Musica (EP)"](docs/images/track-list-release-column.png)
+
+### Keyboard shortcuts
+
+ZipDJ has keyboard shortcuts of its own, listed behind the keyboard icon in its player. Its selected track was hard to see, though. The script tints the selected row blue, and a click on a row selects it. It adds these keys:
+
+| Key | What it does |
+|---|---|
+| J / K | Select the next / previous track |
+| O | Open the selected track's release |
+| A | Add the selected track to the download list, as its arrow button does. No download is spent until you download from the download manager. |
+| N / P | Next / previous page |
+| / | Jump to the search box |
+| ? | Show or hide a list of these keys and ZipDJ's own |
+
+ZipDJ's own keys keep working: ↑ and ↓ select, ← and → select and play, Enter plays the selected track, Space plays or pauses. Both sets act on the same selected row. No key does anything while you type in the search box.
+
+On a release's own page, J and K select a track, but ZipDJ's own keys don't work there, so Enter does not play it.
+
+![A ZipDJ track list with the selected row tinted blue, and the list that ? shows: ZipDJ's keys on the left, the script's keys on the right](docs/images/keyboard-shortcuts.png)
 
 ### Download manager
 
@@ -37,7 +57,7 @@ On the search results page, a space typed right after a letter no longer disappe
 
 ## Status
 
-Version 1.1.0, 18 November 2026. It was tested by injection in Chrome. Version 1.0.0, the first public release, was also tested with Violentmonkey in Firefox.
+Version 1.2.0, 18 November 2026. It was tested by injection in Chrome. Version 1.0.0, the first public release, was also tested with Violentmonkey in Firefox.
 
 ## Install
 
