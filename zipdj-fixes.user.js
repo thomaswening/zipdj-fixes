@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         ZipDJ fixes
 // @namespace    https://github.com/thomaswening
-// @version      1.1.0
-// @description  Track lists: title and mix apart from the release. Download manager: links to release, artist and label. Download history: a Label column and titles as real links. Search: keeps the space you just typed.
+// @version      1.2.0
+// @description  Track lists: title and mix apart from the release, roomier rows and columns. Download manager: links to release, artist and label. Download history: a Label column and titles as real links. Search: keeps the space you just typed.
 // @author       thomaswening
 // @license      GPL-3.0-or-later
 // @homepageURL  https://github.com/thomaswening/zipdj-fixes
@@ -480,10 +480,11 @@
   // Values to tweak to taste. ZipDJ's own: 40px rows, 12px text, 11px in the download manager.
   const ROOMY_ROW_HEIGHT = '48px';
   const ROOMY_FONT_SIZE = '13px';
-  // Pixels, like the Release column, for the same reason. The title and artist columns
-  // keep their percentages and share what is left.
-  const ROOMY_LABEL_COLUMN_WIDTH = '150px';
-  const ROOMY_GENRE_COLUMN_WIDTH = '150px';
+  // Shares, like the app's own 100% title, 53% artist, 30% label and 40% genre, which the
+  // table scales to fit. Pixels would crush the title and artist with the download manager
+  // open.
+  const ROOMY_LABEL_COLUMN_WIDTH = '45%';
+  const ROOMY_GENRE_COLUMN_WIDTH = '45%';
   const ROOMY_DOWNLOAD_MANAGER_FONT_SIZE = '12px';
   const ROOMY_DOWNLOAD_MANAGER_LINE_HEIGHT = '1.5';
 
@@ -491,6 +492,9 @@
   // holds a table of its own, apart from the header row's table.
   const TRACK_LIST_SCOPE = '.zd-track-view';
   const BODY_ROW_TABLE_SELECTOR = 'table.zd-body-row-table';
+  // The app sets this class on the body while the download manager panel is open.
+  const DOWNLOAD_MANAGER_OPEN_SELECTOR = 'body.zd-slide-open';
+  const RELEASE_DATE_CELL_SELECTOR = '.zd-release';
 
   // The app sets these sizes with "!important", so the script has to as well.
   function addRoomyStyles() {
@@ -502,6 +506,9 @@
       }
       ${TRACK_LIST_SCOPE} .zd-label { width: ${ROOMY_LABEL_COLUMN_WIDTH} !important; }
       ${TRACK_LIST_SCOPE} .zd-genre { width: ${ROOMY_GENRE_COLUMN_WIDTH} !important; }
+      ${DOWNLOAD_MANAGER_OPEN_SELECTOR} ${TRACK_LIST_SCOPE} ${RELEASE_DATE_CELL_SELECTOR} {
+        display: none !important;
+      }
       .${DOWNLOAD_MANAGER_INFO_CLASS} {
         font-size: ${ROOMY_DOWNLOAD_MANAGER_FONT_SIZE};
         line-height: ${ROOMY_DOWNLOAD_MANAGER_LINE_HEIGHT};
