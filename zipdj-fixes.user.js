@@ -488,6 +488,8 @@
   const SHORTCUTS_OVERLAY_CLASS = 'zdx-shortcuts';
   const APP_ACCENT_COLOUR = '#4f7be9';
   const SELECTED_ROW_BACKGROUND = 'rgba(79, 123, 233, 0.18)'; // the accent colour, faded
+  // Wider than any cell, so an inset shadow of this spread fills the whole cell.
+  const SCREEN_COVERING_SHADOW_SPREAD = '9999px';
   // Keeps a row scrolled to by J or K clear of the app's top bar and its player at the bottom.
   const ROW_SCROLL_MARGIN = '80px';
   const NEXT_ROW = 1;
@@ -630,15 +632,16 @@
     if (row && row.querySelector(PLAY_LINK_SELECTOR)) selectRow(row);
   }
 
-  // The app paints the selected row's cells with "!important" rules of four classes. The
-  // repeated class outranks them without depending on the order of the style sheets.
+  // The app sets the selected row's background with long "!important" selectors, one per
+  // page layout. An inset shadow covers that background instead of outranking each of them.
   function addShortcutStyles() {
-    const selectedCells = `${TRACK_ROW_SELECTOR}${`.${APP_SELECTED_ROW_CLASS}`.repeat(4)} > td`;
+    const selectedCells = `${TRACK_ROW_SELECTOR}.${APP_SELECTED_ROW_CLASS} > td`;
+    const tint = `inset 0 0 0 ${SCREEN_COVERING_SHADOW_SPREAD} ${SELECTED_ROW_BACKGROUND}`;
     const style = document.createElement('style');
     style.textContent = `
       ${TRACK_ROW_SELECTOR} { scroll-margin: ${ROW_SCROLL_MARGIN} 0; }
-      ${selectedCells} { background: ${SELECTED_ROW_BACKGROUND} !important; }
-      ${selectedCells}:first-child { box-shadow: inset 3px 0 0 ${APP_ACCENT_COLOUR}; }
+      ${selectedCells} { box-shadow: ${tint}; }
+      ${selectedCells}:first-child { box-shadow: inset 3px 0 0 ${APP_ACCENT_COLOUR}, ${tint}; }
       .${SHORTCUTS_OVERLAY_CLASS} {
         position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 10000;
         display: flex; gap: 32px; padding: 20px 28px; border-radius: 8px;
