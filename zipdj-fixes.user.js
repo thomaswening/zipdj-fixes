@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         ZipDJ fixes
 // @namespace    https://github.com/thomaswening
-// @version      1.1.0
-// @description  Track lists: title and mix apart from the release. Download manager: links to release, artist and label. Download history: a Label column and titles as real links. Search: keeps the space you just typed.
+// @version      1.2.0
+// @description  Track lists: title and mix apart from the release, keyboard shortcuts (press ?). Download manager: links to release, artist and label. Download history: a Label column and titles as real links. Search: keeps the space you just typed.
 // @author       thomaswening
 // @license      GPL-3.0-or-later
 // @homepageURL  https://github.com/thomaswening/zipdj-fixes
@@ -475,6 +475,191 @@
     document.querySelectorAll(SEARCH_INPUT_SELECTOR).forEach(guardSearchInput);
   }
 
+  // ---- Keyboard shortcuts ----------------------------------------------------------------
+
+  // ZipDJ has keys of its own (its player's keyboard icon lists them). They act on the row
+  // that has this class, so the script's keys move the same class instead of keeping a
+  // selection of their own, and both sets of keys go on from the same row.
+  const APP_SELECTED_ROW_CLASS = 'hotkey-bg';
+  const TRACK_ROW_SELECTOR = 'tr.zdtrackslist';
+  const ADD_TO_DOWNLOAD_LIST_SELECTOR = 'a.zd-download-btn';
+  const NEXT_PAGE_SELECTOR = '.sk-pagination-navigation [data-key="next"]:not(.is-disabled)';
+  const PREVIOUS_PAGE_SELECTOR = '.sk-pagination-navigation [data-key="previous"]:not(.is-disabled)';
+  const SHORTCUTS_OVERLAY_CLASS = 'zdx-shortcuts';
+  const APP_ACCENT_COLOUR = '#4f7be9';
+  const SELECTED_ROW_BACKGROUND = 'rgba(79, 123, 233, 0.18)'; // the accent colour, faded
+  // Keeps a row scrolled to by J or K clear of the app's top bar and its player at the bottom.
+  const ROW_SCROLL_MARGIN = '80px';
+  const NEXT_ROW = 1;
+  const PREVIOUS_ROW = -1;
+
+  const APP_SHORTCUTS = [
+    { keys: '↑ ↓', description: 'Select the previous or next track' },
+    { keys: '← →', description: 'Select and play the previous or next track' },
+    { keys: 'Enter', description: 'Play the selected track' },
+    { keys: 'Space', description: 'Play or pause' },
+    { keys: 'Tab', description: 'Add the selected track to the download list' },
+    { keys: 'Backspace', description: 'Mute' },
+    { keys: 'Ctrl + ← →', description: 'Seek' },
+  ];
+
+  /** The script's own keys, by the value of KeyboardEvent.key in lower case. */
+  const OWN_SHORTCUTS = new Map([
+    ['j', { keys: 'J', description: 'Select the next track', run: () => moveSelection(NEXT_ROW) }],
+    ['k', { keys: 'K', description: 'Select the previous track', run: () => moveSelection(PREVIOUS_ROW) }],
+    ['o', { keys: 'O', description: "Open the selected track's release", run: openSelectedRelease }],
+    ['a', { keys: 'A', description: 'Add the selected track to the download list', run: addSelectedToDownloadList }],
+    ['n', { keys: 'N', description: 'Next page', run: () => clickIfPresent(NEXT_PAGE_SELECTOR) }],
+    ['p', { keys: 'P', description: 'Previous page', run: () => clickIfPresent(PREVIOUS_PAGE_SELECTOR) }],
+    ['/', { keys: '/', description: 'Search', run: focusSearch }],
+    ['?', { keys: '?', description: 'Show or hide this list', run: toggleShortcutsOverlay }],
+  ]);
+
+  let shortcutsOverlay = null;
+
+  function trackRows() {
+    return [...document.querySelectorAll(TRACK_ROW_SELECTOR)].filter((row) =>
+      row.querySelector(PLAY_LINK_SELECTOR),
+    );
+  }
+
+  function selectedRow() {
+    return document.querySelector(`${TRACK_ROW_SELECTOR}.${APP_SELECTED_ROW_CLASS}`);
+  }
+
+  function selectRow(row) {
+    document
+      .querySelectorAll(`${TRACK_ROW_SELECTOR}.${APP_SELECTED_ROW_CLASS}`)
+      .forEach((other) => other.classList.remove(APP_SELECTED_ROW_CLASS));
+    row.classList.add(APP_SELECTED_ROW_CLASS);
+  }
+
+  // Without a selected row, either key selects the first one.
+  function moveSelection(step) {
+    const rows = trackRows();
+    if (rows.length === 0) return;
+    const currentIndex = rows.indexOf(selectedRow());
+    const nextIndex =
+      currentIndex < 0 ? 0 : Math.min(Math.max(currentIndex + step, 0), rows.length - 1);
+    selectRow(rows[nextIndex]);
+    rows[nextIndex].scrollIntoView({ block: 'nearest' });
+  }
+
+  function openSelectedRelease() {
+    const releaseId = selectedRow()?.querySelector(PLAY_LINK_SELECTOR)?.dataset.release_id;
+    if (releaseId) navigateInApp(releaseUrl(releaseId));
+  }
+
+  // The row's arrow button only puts the track on the download manager's list. A download
+  // is spent later, from the download manager.
+  function addSelectedToDownloadList() {
+    selectedRow()?.querySelector(ADD_TO_DOWNLOAD_LIST_SELECTOR)?.click();
+  }
+
+  function clickIfPresent(selector) {
+    document.querySelector(selector)?.click();
+  }
+
+  function focusSearch() {
+    document.querySelector(SEARCH_INPUT_SELECTOR)?.focus();
+  }
+
+  function createShortcutsSection(heading, shortcuts) {
+    const section = document.createElement('section');
+    const title = document.createElement('h3');
+    title.textContent = heading;
+    const list = document.createElement('dl');
+    for (const { keys, description } of shortcuts) {
+      const key = document.createElement('dt');
+      key.textContent = keys;
+      const meaning = document.createElement('dd');
+      meaning.textContent = description;
+      list.append(key, meaning);
+    }
+    section.append(title, list);
+    return section;
+  }
+
+  function createShortcutsOverlay() {
+    const overlay = document.createElement('div');
+    overlay.className = SHORTCUTS_OVERLAY_CLASS;
+    overlay.hidden = true;
+    overlay.append(
+      createShortcutsSection('ZipDJ', APP_SHORTCUTS),
+      createShortcutsSection('ZipDJ fixes', [...OWN_SHORTCUTS.values()]),
+    );
+    overlay.addEventListener('click', () => (overlay.hidden = true));
+    document.body.appendChild(overlay);
+    return overlay;
+  }
+
+  function toggleShortcutsOverlay() {
+    shortcutsOverlay ??= createShortcutsOverlay();
+    shortcutsOverlay.hidden = !shortcutsOverlay.hidden;
+  }
+
+  function isOverlayShown() {
+    return shortcutsOverlay !== null && !shortcutsOverlay.hidden;
+  }
+
+  function isTyping(target) {
+    return target.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName);
+  }
+
+  // Shift stays allowed: "?" and, on some keyboards, "/" need it.
+  function hasCommandModifier(event) {
+    return event.ctrlKey || event.altKey || event.metaKey;
+  }
+
+  function handleShortcutKey(event) {
+    if (hasCommandModifier(event) || isTyping(event.target)) return;
+    if (event.key === 'Escape' && isOverlayShown()) {
+      shortcutsOverlay.hidden = true;
+      event.stopImmediatePropagation();
+      return;
+    }
+    const shortcut = OWN_SHORTCUTS.get(event.key.toLowerCase());
+    if (!shortcut) return;
+    // Keeps "/" out of the search box it has just focused.
+    event.preventDefault();
+    shortcut.run();
+  }
+
+  function selectClickedRow(event) {
+    const row = event.target.closest?.(TRACK_ROW_SELECTOR);
+    if (row && row.querySelector(PLAY_LINK_SELECTOR)) selectRow(row);
+  }
+
+  function addShortcutStyles() {
+    const style = document.createElement('style');
+    style.textContent = `
+      ${TRACK_ROW_SELECTOR} { scroll-margin: ${ROW_SCROLL_MARGIN} 0; }
+      ${TRACK_ROW_SELECTOR}.${APP_SELECTED_ROW_CLASS} {
+        background: ${SELECTED_ROW_BACKGROUND} !important;
+        box-shadow: inset 3px 0 0 ${APP_ACCENT_COLOUR};
+      }
+      .${SHORTCUTS_OVERLAY_CLASS} {
+        position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 10000;
+        display: flex; gap: 32px; padding: 20px 28px; border-radius: 8px;
+        background: #1b2228; color: #ddd; font-size: 13px; box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
+      }
+      .${SHORTCUTS_OVERLAY_CLASS}[hidden] { display: none; }
+      .${SHORTCUTS_OVERLAY_CLASS} h3 { margin: 0 0 10px; font-size: 14px; color: ${APP_ACCENT_COLOUR}; }
+      .${SHORTCUTS_OVERLAY_CLASS} dl {
+        display: grid; grid-template-columns: auto auto; gap: 6px 16px; margin: 0;
+      }
+      .${SHORTCUTS_OVERLAY_CLASS} dt { font-weight: 600; white-space: nowrap; }
+      .${SHORTCUTS_OVERLAY_CLASS} dd { margin: 0; color: #9aa7b0; }
+    `;
+    document.head.appendChild(style);
+  }
+
+  function startKeyboardShortcuts() {
+    addShortcutStyles();
+    window.addEventListener('keydown', handleShortcutKey, true);
+    window.addEventListener('click', selectClickedRow, true);
+  }
+
   // ---- Start -----------------------------------------------------------------------------
 
   function addStyles() {
@@ -509,6 +694,7 @@
   // Works whether the manager starts the script before or after the page has loaded.
   function startWhenDocumentIsReady() {
     addStyles();
+    startKeyboardShortcuts();
     onPageChanged();
     new MutationObserver(onPageChanged).observe(document.body, { childList: true, subtree: true });
   }
