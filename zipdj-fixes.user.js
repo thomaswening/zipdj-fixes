@@ -43,8 +43,6 @@
 
   const PLAY_LINK_SELECTOR = 'a.zd-item-play';
   const HISTORY_ROW_SELECTOR = 'tr.zd-row-downloadhistory[data-tr-id]';
-  // In the history every track is downloaded, so dimming its rows would tell nothing.
-  const LIST_ROW_PLAY_LINK_SELECTOR = `tr:not(.zd-row-downloadhistory) ${PLAY_LINK_SELECTOR}`;
   const HISTORY_TITLE_CELL_SELECTOR = 'td.zd-title-d-h';
   const HISTORY_GENRE_CELL_SELECTOR = 'td.zd-label';
   const GENRE_HEADER_TEXT = 'Genre';
@@ -398,8 +396,11 @@
   // Sets the class on every pass, since the app reuses a row for another track. ZipDJ's own
   // sign of a download, a missing download arrow, is easy to overlook.
   function dimDownloadedRows() {
-    for (const playLink of document.querySelectorAll(LIST_ROW_PLAY_LINK_SELECTOR)) {
+    for (const playLink of document.querySelectorAll(PLAY_LINK_SELECTOR)) {
       const row = playLink.closest('tr');
+      // In the history every track is downloaded, so dimming its rows would tell nothing.
+      // The download manager's rows are list items, not table rows.
+      if (!row || row.matches(HISTORY_ROW_SELECTOR)) continue;
       row.classList.toggle(DOWNLOADED_ROW_CLASS, downloadedTrackIds.has(playLink.dataset.id));
     }
   }
