@@ -54,8 +54,9 @@
   const DOWNLOAD_MANAGER_ROW_SELECTOR = 'li.zd-dm-row';
   const DOWNLOAD_MANAGER_APP_INFO_SELECTOR = ':scope > a.album-title';
   const SEARCH_INPUT_SELECTOR = 'input[placeholder^="Search for Tracks"]';
-  // The bar above a track list with Genre Filter, Key and BPM.
-  const LIST_FILTER_BAR_SELECTOR = '.zd-v5-tp-down-filter > .d-flex';
+  // Above a track list, the genre tabs and the bar with Genre Filter, Key and BPM.
+  const LIST_FILTER_BARS_SELECTOR = '.zd-v5-tp-down-filter > .d-flex';
+  const APP_FILTER_DROPDOWN_SELECTOR = '.zd-dropdown';
   // The look of the app's own buttons in that bar.
   const APP_FILTER_BUTTON_CLASSES = 'zd-top-dropdown top-downloads-filter-btn zd_v5 btn btn-secondary';
 
@@ -472,7 +473,8 @@
   }
 
   function addHideDownloadedToggles() {
-    for (const filterBar of document.querySelectorAll(LIST_FILTER_BAR_SELECTOR)) {
+    for (const filterBar of document.querySelectorAll(LIST_FILTER_BARS_SELECTOR)) {
+      if (!filterBar.querySelector(APP_FILTER_DROPDOWN_SELECTOR)) continue;
       if (filterBar.querySelector(`.${HIDE_DOWNLOADED_TOGGLE_CLASS}`)) continue;
       filterBar.prepend(createHideDownloadedToggle());
     }
