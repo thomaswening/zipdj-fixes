@@ -1,18 +1,20 @@
 # ZipDJ fixes
 
-A userscript for members of [ZipDJ](https://www.zipdj.com), the DJ record pool. It fixes three annoyances in ZipDJ's member web app:
+A userscript for members of [ZipDJ](https://www.zipdj.com), the DJ record pool. It fixes five annoyances in ZipDJ's member web app:
 
+- **Title, mix and release apart in track lists.** ZipDJ shows a track as its release's name followed by the mix, so an EP track reads "Musica (EP) One More Time (Extended Mix)". The script shows the title with its mix in brackets, "One More Time (Extended Mix)", and adds a Release column. A click on a release opens it. For a single, a suffix such as "(Incl. Osadon Remix)" is left out of the title.
+- **Links in the download manager.** Each entry links its release, each of its artists and its label, which is added as a third line. For an EP track, the entry shows the track's own title when the track has appeared in a list since the page was loaded. Otherwise it shows the release's name, as ZipDJ does.
 - **Labels in the download history.** The history gets a Label column. A click on a label lists all of that label's tracks. The label is shown on each track page, but the history doesn't show it.
 - **Real links in the download history.** Track titles become links. Middle-click or Ctrl+click opens the release in a new tab, so the history keeps its place and doesn't reload.
 - **Spaces in the search box.** On the search results page, a space typed right after a letter no longer disappears.
 
 ![ZipDJ's download history with the added Label column between Genre and Date, showing labels such as Intangible, Axtone and d:vision](docs/images/download-history-labels.png)
 
-The script sends no requests of its own. It reads the labels from data the history page already loads, and it changes only how pages look and behave in your own browser.
+The script sends no requests of its own. It reads titles, releases and labels from data ZipDJ's pages already load. It changes only how pages look and behave in your own browser.
 
 ## Status
 
-Version 1.0.0, first public release, 18 November 2026. It was tested with Violentmonkey in Firefox and by injection in Chrome.
+Version 1.1.0, 18 November 2026. It was tested by injection in Chrome. Version 1.0.0, the first public release, was also tested with Violentmonkey in Firefox.
 
 ## Install
 
@@ -27,7 +29,8 @@ The manager checks the address you installed from for new versions. Greasy Fork 
 The script depends on how ZipDJ builds its pages. A redesign can break it without any error message. Press F12, open the console and reload the page:
 
 - No line starting with `[ZipDJ fixes]`: the manager doesn't run the script. Check that it is enabled.
-- `[ZipDJ fixes] running`, but never `labels known for …`: ZipDJ has probably changed how it loads the history.
+- `[ZipDJ fixes] running`, but never `details known for …`: ZipDJ has probably changed how it loads track lists and the history.
+- No `labels known for … tracks in the download manager`: ZipDJ has probably changed how it loads the download manager.
 
 Please [open an issue](https://github.com/thomaswening/zipdj-fixes/issues) with what you see.
 
