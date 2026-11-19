@@ -40,7 +40,7 @@ Track lists and the download history get taller rows (48 instead of 40 pixels) a
 
 ### Keyboard shortcuts
 
-ZipDJ has keyboard shortcuts of its own, listed behind the keyboard icon in its player. Its keys for moving through a list work only on some pages, its Space plays the selected track instead of pausing when you have moved on, and its selected track is hard to see. The script takes over those keys, so they work on every track list, a release's own page included. It tints the selected row blue, and a click on a row selects it.
+ZipDJ has keyboard shortcuts of its own, listed behind the keyboard icon in its player. Its keys for moving through a list work only on some pages. Its Space plays the selected track instead of pausing when you have moved on. Its selected track is hard to see. The script takes over those keys, so they work on every track list, a release's own page included. It tints the selected row blue, and a click on a row selects it.
 
 | Key | What it does |
 |---|---|
