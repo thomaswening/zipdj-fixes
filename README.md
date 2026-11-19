@@ -40,20 +40,20 @@ Track lists and the download history get taller rows (48 instead of 40 pixels) a
 
 ### Keyboard shortcuts
 
-ZipDJ has keyboard shortcuts of its own, listed behind the keyboard icon in its player. Its selected track was hard to see, though. The script tints the selected row blue, and a click on a row selects it. It adds these keys:
+ZipDJ has keyboard shortcuts of its own, listed behind the keyboard icon in its player. Its keys for moving through a list work only on some pages, and its selected track is hard to see. The script takes over those keys, so they work on every track list, a release's own page included. It tints the selected row blue, and a click on a row selects it.
 
 | Key | What it does |
 |---|---|
-| J / K | Select the next / previous track |
+| ↓ or J / ↑ or K | Select the next / previous track |
+| → / ← | Select and play the next / previous track |
+| Enter | Play the selected track |
 | O | Open the selected track's release |
 | A | Add the selected track to the download list, as its arrow button does. No download is spent until you download from the download manager. |
 | N / P | Next / previous page |
 | / | Jump to the search box |
-| ? | Show or hide a list of these keys and ZipDJ's own |
+| ? | Show or hide a list of all keys |
 
-ZipDJ's own keys keep working: ↑ and ↓ select, ← and → select and play, Enter plays the selected track, Space plays or pauses. Both sets act on the same selected row. J and K skip tracks hidden by **Hide downloaded**. The script's keys do nothing while you type in the search box.
-
-On a release's own page, J and K select a track, but ZipDJ's own keys don't work there, so Enter does not play it.
+ZipDJ's player keys stay as they are: Space plays or pauses, Tab adds the selected track to the download list, Backspace mutes, Ctrl + ← / → seeks. The keys skip tracks hidden by **Hide downloaded**. The script's keys do nothing while you type in the search box.
 
 ![A ZipDJ track list with the selected row tinted blue, and the list that ? shows: ZipDJ's keys on the left, the script's keys on the right](docs/images/keyboard-shortcuts.png)
 
