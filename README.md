@@ -34,11 +34,13 @@ To leave downloaded tracks out altogether, click **Hide downloaded** next to Gen
 
 ### Sorting and page size
 
-ZipDJ lists tracks newest release first, 50 to a page, and its column headers do nothing. With the script, a click on a column header sorts the list by that column: Track / Mix, Release, Artist, Label, Genre, Time, Key, BPM or Released. A second click reverses the order. An arrow next to the header shows the order in use. The search sorts all of the list's tracks, not only those on one page, so page 2 continues where page 1 stopped.
+ZipDJ lists tracks newest release first, 50 to a page. Its column headers do nothing. With the script, a click on a column header sorts the list by that column: Track / Mix, Release, Artist, Label, Genre, Time, Key, BPM or Released. A second click reverses the order. An arrow next to the header shows the order in use. The search sorts all of the list's tracks, not only those on one page, so page 2 continues where page 1 stopped.
 
-BPM sorts as a number, so 99 comes before 100. Key and Time sort as text. A single has no title of its own in ZipDJ's data, so sorting by Track / Mix puts singles first.
+BPM sorts as a number, so 99 comes before 100. Key sorts as text, so 11A comes before 5A. A single has no title of its own in ZipDJ's data, so sorting by Track / Mix doesn't place singles by their title.
 
-The menu next to Genre Filter sets how many tracks a page shows: 50, 100, 200 or 500. The page buttons count pages of that size. Your browser remembers the order and the page size for every list. A change loads the list again from its first page. Charts and Top Downloads keep ZipDJ's ranking.
+The menu left of Hide downloaded sets how many tracks a page shows: 50, 100, 200 or 500. The page buttons count pages of that size. Your browser remembers the order and the page size for every list. A change loads the list again from its first page. Charts and Top Downloads keep ZipDJ's ranking.
+
+![A ZipDJ track list of the label 8bit sorted by BPM: the BPM header shows an upward arrow, the menu next to Hide downloaded reads "100 per page", and the BPM column runs 120, 120, 121, 122](docs/images/track-list-sorted-by-bpm.png)
 
 ZipDJ signs you out when its search fails. So the script only asks for orders that were tried against ZipDJ's search, and never for more than its search hands out (10,000 tracks into a list).
 

@@ -670,10 +670,15 @@
     };
   }
 
+  // Drops the page by hand: URLSearchParams would rewrite "label_name[0]" as
+  // "label_name%5B0%5D" in the address bar.
   function listUrlOnFirstPage() {
-    const url = new URL(location.href);
-    url.searchParams.delete(PAGE_PARAMETER);
-    return `${url.pathname}${url.search}`;
+    const parameters = location.search
+      .slice(1)
+      .split('&')
+      .filter((parameter) => parameter && !parameter.startsWith(`${PAGE_PARAMETER}=`));
+    const search = parameters.length > 0 ? `?${parameters.join('&')}` : '';
+    return `${location.pathname}${search}`;
   }
 
   // A full reload: the app searches again only when its own state changes, and neither the
