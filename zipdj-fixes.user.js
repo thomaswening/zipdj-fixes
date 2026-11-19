@@ -639,6 +639,7 @@
   const ADD_TO_DOWNLOAD_LIST_SELECTOR = 'a.zd-download-btn';
   const NEXT_PAGE_SELECTOR = '.sk-pagination-navigation [data-key="next"]:not(.is-disabled)';
   const PREVIOUS_PAGE_SELECTOR = '.sk-pagination-navigation [data-key="previous"]:not(.is-disabled)';
+  const PLAYER_PLAY_PAUSE_SELECTOR = 'span.play-btn';
   const SHORTCUTS_OVERLAY_CLASS = 'zdx-shortcuts';
   const APP_ACCENT_COLOUR = '#4f7be9';
   const SELECTED_ROW_BACKGROUND = 'rgba(79, 123, 233, 0.18)'; // the accent colour, faded
@@ -651,28 +652,32 @@
 
   /** ZipDJ's keys that the script leaves alone, for the list that "?" shows. */
   const APP_SHORTCUTS = [
-    { label: 'Space', description: 'Play or pause' },
     { label: 'Tab', description: 'Add the selected track to the download list' },
     { label: 'Backspace', description: 'Mute' },
     { label: 'Ctrl + ← →', description: 'Seek' },
   ];
 
   /**
-   * The script's keys. "keys" holds values of KeyboardEvent.key in lower case. A row key acts
-   * only where a track list is shown, so elsewhere the arrows still scroll the page. A key
-   * that yields to a focused control leaves Enter on a focused button to that button.
+   * The script's keys. "keys" holds values of KeyboardEvent.key in lower case. A key with
+   * "isAvailable" acts only when it returns true, so elsewhere the arrows still scroll the
+   * page and Space still scrolls or presses a button. A key that yields to a focused control
+   * leaves Enter or Space on a focused button to that button.
    */
   const OWN_SHORTCUTS = [
     { label: '↓ or J', keys: ['arrowdown', 'j'], description: 'Select the next track',
-      isRowKey: true, run: () => moveSelection(NEXT_ROW) },
+      isAvailable: hasTrackRows, run: () => moveSelection(NEXT_ROW) },
     { label: '↑ or K', keys: ['arrowup', 'k'], description: 'Select the previous track',
-      isRowKey: true, run: () => moveSelection(PREVIOUS_ROW) },
+      isAvailable: hasTrackRows, run: () => moveSelection(PREVIOUS_ROW) },
     { label: '→', keys: ['arrowright'], description: 'Select and play the next track',
-      isRowKey: true, run: () => moveSelectionAndPlay(NEXT_ROW) },
+      isAvailable: hasTrackRows, run: () => moveSelectionAndPlay(NEXT_ROW) },
     { label: '←', keys: ['arrowleft'], description: 'Select and play the previous track',
-      isRowKey: true, run: () => moveSelectionAndPlay(PREVIOUS_ROW) },
+      isAvailable: hasTrackRows, run: () => moveSelectionAndPlay(PREVIOUS_ROW) },
     { label: 'Enter', keys: ['enter'], description: 'Play the selected track',
-      isRowKey: true, yieldsToFocusedControl: true, run: playSelected },
+      isAvailable: hasTrackRows, yieldsToFocusedControl: true, run: playSelected },
+    // ZipDJ's own Space plays the selected track instead when it isn't the one playing.
+    { label: 'Space', keys: [' '], description: 'Pause or go on playing',
+      isAvailable: hasPlayer, yieldsToFocusedControl: true,
+      run: () => clickIfPresent(PLAYER_PLAY_PAUSE_SELECTOR) },
     { label: 'O', keys: ['o'], description: "Open the selected track's release", run: openSelectedRelease },
     { label: 'A', keys: ['a'], description: 'Add the selected track to the download list',
       run: addSelectedToDownloadList },
@@ -838,8 +843,16 @@
     return target.closest?.('button') !== null;
   }
 
+  function hasTrackRows() {
+    return trackRows().length > 0;
+  }
+
+  function hasPlayer() {
+    return document.querySelector(PLAYER_PLAY_PAUSE_SELECTOR) !== null;
+  }
+
   function appliesHere(shortcut, target) {
-    if (shortcut.isRowKey && trackRows().length === 0) return false;
+    if (shortcut.isAvailable && !shortcut.isAvailable()) return false;
     return !(shortcut.yieldsToFocusedControl && isFocusedControl(target));
   }
 
