@@ -480,6 +480,293 @@
     }
   }
 
+  // ---- Track lists: sorting and page size ------------------------------------------------
+
+  // ZipDJ's track lists ask the track search for one page at a time, newest release first.
+  // The script changes that request before it leaves: the order, the page size and where the
+  // page starts. The search then sorts all matching tracks, not only those on one page.
+  //
+  // A search error signs the member out: the app reacts to any failed search that way. So
+  // the script only ever sends sort clauses that were tried against ZipDJ's search on
+  // 19 November 2026 and only changes lists the app sorts by release date. Charts and top
+  // lists, which the app ranks by downloads, keep their order.
+
+  const APP_PAGE_SIZE = 50;
+  const PAGE_SIZES = [50, 100, 200, 500];
+  // Elasticsearch's default index.max_result_window: a request reaching past it fails.
+  const MAX_RESULT_WINDOW = 10000;
+  const APP_DATE_SORT_FIELD = 'release_created_date';
+  const ASCENDING = 'asc';
+  const DESCENDING = 'desc';
+  const SORT_STORAGE_KEY = 'zdx-sort';
+  const PAGE_SIZE_STORAGE_KEY = 'zdx-page-size';
+  const SORTABLE_HEADER_CLASS = 'zdx-sortable';
+  const SORT_COLUMN_ATTRIBUTE = 'data-zdx-sort-column';
+  const SORT_DIRECTION_ATTRIBUTE = 'data-zdx-sort-direction';
+  const PAGE_SIZE_CONTROL_CLASS = 'zdx-page-size';
+  const PAGE_SIZE_LABEL = 'per page';
+  // As CSS strings: a space, then a black up- or down-pointing triangle.
+  const ASCENDING_ARROW = '" \\25B2"';
+  const DESCENDING_ARROW = '" \\25BC"';
+  const PAGE_PARAMETER = 'pg';
+  // BPM is stored as text, so a plain sort puts "100" before "99". This script turns it into
+  // a number. Values that are no number, such as "138t", go last in either direction.
+  const NUMERIC_BPM_SCRIPT =
+    "def value = doc['track_bpm.keyword']; if (value.size() == 0) return params.missing; " +
+    'try { return Double.parseDouble(value.value) } catch (Exception e) { return params.missing }';
+  const NUMERIC_SORT_LAST_ASCENDING = 1e9;
+  const NUMERIC_SORT_LAST_DESCENDING = -1;
+
+  function keywordSort(field) {
+    return (direction) => ({ [field]: { order: direction } });
+  }
+
+  function numericBpmSort(direction) {
+    const missing =
+      direction === ASCENDING ? NUMERIC_SORT_LAST_ASCENDING : NUMERIC_SORT_LAST_DESCENDING;
+    return {
+      _script: {
+        type: 'number',
+        order: direction,
+        script: { lang: 'painless', source: NUMERIC_BPM_SCRIPT, params: { missing } },
+      },
+    };
+  }
+
+  /**
+   * The sortable columns by the class of their header cell. Text fields sort by their
+   * ".keyword" copy: sorting the text field itself fails.
+   */
+  const SORT_COLUMNS = [
+    { name: 'title', headerClass: 'zd-title', sortClause: keywordSort('track_title.keyword') },
+    { name: 'release', headerClass: RELEASE_CELL_CLASS, sortClause: keywordSort('track_release_name.keyword') },
+    { name: 'artist', headerClass: 'zd-artist', sortClause: keywordSort('release_artists.artist_name.keyword') },
+    { name: 'label', headerClass: 'zd-label', sortClause: keywordSort('label_name.keyword') },
+    { name: 'genre', headerClass: 'zd-genre', sortClause: keywordSort('genre_name.keyword') },
+    { name: 'time', headerClass: 'zd-time', sortClause: keywordSort('track_duration.keyword') },
+    { name: 'key', headerClass: 'zd-key', sortClause: keywordSort('track_key.keyword') },
+    { name: 'bpm', headerClass: 'zd-bpm', sortClause: numericBpmSort },
+    { name: 'released', headerClass: 'zd-release', sortClause: keywordSort(APP_DATE_SORT_FIELD) },
+  ];
+  // The app's own order, which needs no change to the request.
+  const APP_ORDER = { column: 'released', direction: DESCENDING };
+
+  function readStoredJson(key) {
+    try {
+      return parseJson(localStorage.getItem(key) || '');
+    } catch {
+      return null;
+    }
+  }
+
+  function storeJson(key, value) {
+    try {
+      localStorage.setItem(key, JSON.stringify(value));
+    } catch {
+      // The choice still holds until the page reloads.
+    }
+  }
+
+  function columnNamed(name) {
+    return SORT_COLUMNS.find((column) => column.name === name);
+  }
+
+  function readListOrder() {
+    const stored = readStoredJson(SORT_STORAGE_KEY);
+    const isValid =
+      columnNamed(stored?.column) && [ASCENDING, DESCENDING].includes(stored?.direction);
+    return isValid ? stored : APP_ORDER;
+  }
+
+  function readPageSize() {
+    const stored = readStoredJson(PAGE_SIZE_STORAGE_KEY);
+    return PAGE_SIZES.includes(stored) ? stored : APP_PAGE_SIZE;
+  }
+
+  let listOrder = readListOrder();
+  let pageSize = readPageSize();
+
+  function isAppOrder(order) {
+    return order.column === APP_ORDER.column && order.direction === APP_ORDER.direction;
+  }
+
+  // Only the release-date lists: their first sort clause is the app's date field.
+  function isReleaseDateListSearch(body) {
+    const firstSortField = body?.sort?.[0] && Object.keys(body.sort[0])[0];
+    return firstSortField === APP_DATE_SORT_FIELD && body.size === APP_PAGE_SIZE && body.aggs;
+  }
+
+  /** Returns how the request changed: the page size it now asks for, or none. */
+  function rewriteListSearch(body) {
+    if (!isAppOrder(listOrder)) {
+      // The app's clauses stay behind as tie-breakers, so equal values keep the newest first.
+      body.sort = [columnNamed(listOrder.column).sortClause(listOrder.direction), ...body.sort];
+    }
+    const pageIndex = Math.round((body.from || 0) / APP_PAGE_SIZE);
+    const from = pageIndex * pageSize;
+    if (pageSize === APP_PAGE_SIZE || from + pageSize > MAX_RESULT_WINDOW) return null;
+    body.size = pageSize;
+    body.from = from;
+    return pageSize;
+  }
+
+  // The app counts its pages as total / 50, its own page size. A total scaled to that count
+  // makes its page buttons match the larger pages. The page shows the total nowhere else.
+  function scaleTotalForAppPager(answer, requestedPageSize) {
+    const total = answer?.hits?.total;
+    const trackCount = typeof total === 'object' ? total?.value : total;
+    if (typeof trackCount !== 'number') return answer;
+    const reachablePageCount = Math.floor(MAX_RESULT_WINDOW / requestedPageSize);
+    const pageCount = Math.min(Math.ceil(trackCount / requestedPageSize), reachablePageCount);
+    const scaledCount = pageCount * APP_PAGE_SIZE;
+    if (typeof total === 'object') total.value = scaledCount;
+    else answer.hits.total = scaledCount;
+    return answer;
+  }
+
+  // The app reads the answer from responseText or response, so both give the scaled one.
+  function scaleAnswerOf(request, requestedPageSize) {
+    const originalText = Object.getOwnPropertyDescriptor(XMLHttpRequest.prototype, 'responseText');
+    const originalResponse = Object.getOwnPropertyDescriptor(XMLHttpRequest.prototype, 'response');
+    let scaledText = null;
+    const readScaledText = () => {
+      scaledText ??= JSON.stringify(
+        scaleTotalForAppPager(parseJson(originalText.get.call(request)), requestedPageSize),
+      );
+      return scaledText;
+    };
+    const isDone = () => request.readyState === XMLHttpRequest.DONE && request.status === 200;
+    Object.defineProperty(request, 'responseText', {
+      get: () => (isDone() ? readScaledText() : originalText.get.call(request)),
+    });
+    Object.defineProperty(request, 'response', {
+      get() {
+        if (!isDone()) return originalResponse.get.call(request);
+        return request.responseType === 'json' ? parseJson(readScaledText()) : readScaledText();
+      },
+    });
+  }
+
+  // The app asks the track search through XMLHttpRequest, so only that is hooked here.
+  function hookListSearchRequests() {
+    const requestUrls = new WeakMap();
+    const originalOpen = XMLHttpRequest.prototype.open;
+    XMLHttpRequest.prototype.open = function (method, url) {
+      requestUrls.set(this, String(url));
+      return originalOpen.apply(this, arguments);
+    };
+
+    const originalSend = XMLHttpRequest.prototype.send;
+    XMLHttpRequest.prototype.send = function (body) {
+      if (!TRACK_SEARCH_URL_PATTERN.test(requestUrls.get(this) || '')) {
+        return originalSend.apply(this, arguments);
+      }
+      const search = typeof body === 'string' ? parseJson(body) : null;
+      if (!isReleaseDateListSearch(search)) return originalSend.apply(this, arguments);
+      const requestedPageSize = rewriteListSearch(search);
+      if (requestedPageSize) scaleAnswerOf(this, requestedPageSize);
+      return originalSend.call(this, JSON.stringify(search));
+    };
+  }
+
+  function listUrlOnFirstPage() {
+    const url = new URL(location.href);
+    url.searchParams.delete(PAGE_PARAMETER);
+    return `${url.pathname}${url.search}`;
+  }
+
+  // A full reload: the app searches again only when its own state changes, and neither the
+  // order nor the page size is part of it.
+  function reloadListOnFirstPage() {
+    location.assign(listUrlOnFirstPage());
+  }
+
+  function nextOrderAfterClickOn(columnName) {
+    if (listOrder.column !== columnName) return { column: columnName, direction: ASCENDING };
+    const direction = listOrder.direction === ASCENDING ? DESCENDING : ASCENDING;
+    return { column: columnName, direction };
+  }
+
+  function handleSortHeaderClick(event) {
+    const header = event.target.closest?.(`[${SORT_COLUMN_ATTRIBUTE}]`);
+    if (!header) return;
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    listOrder = nextOrderAfterClickOn(header.getAttribute(SORT_COLUMN_ATTRIBUTE));
+    storeJson(SORT_STORAGE_KEY, listOrder);
+    reloadListOnFirstPage();
+  }
+
+  // The arrow is drawn by CSS from this attribute. As text it would change the header's
+  // "Track / Mix", by which the script finds the list.
+  function markSortableHeader(headerCell, column) {
+    if (headerCell.getAttribute(SORT_COLUMN_ATTRIBUTE) !== column.name) {
+      headerCell.setAttribute(SORT_COLUMN_ATTRIBUTE, column.name);
+      headerCell.classList.add(SORTABLE_HEADER_CLASS);
+    }
+    const direction = listOrder.column === column.name ? listOrder.direction : null;
+    // Writing the same value again would wake the page observer for nothing.
+    if (headerCell.getAttribute(SORT_DIRECTION_ATTRIBUTE) === direction) return;
+    if (direction) headerCell.setAttribute(SORT_DIRECTION_ATTRIBUTE, direction);
+    else headerCell.removeAttribute(SORT_DIRECTION_ATTRIBUTE);
+  }
+
+  // Only lists headed "Track / Mix" can be sorted, as only they get the Release column.
+  function addSortableHeaders() {
+    const titleHeaders = [...document.querySelectorAll(LIST_TITLE_CELL_SELECTOR)].filter(
+      (cell) => cell.textContent.trim() === LIST_TITLE_HEADER_TEXT,
+    );
+    for (const headerRow of titleHeaders.map((titleHeader) => titleHeader.parentElement)) {
+      for (const column of SORT_COLUMNS) {
+        const headerCell = headerRow.querySelector(`:scope > td.${column.headerClass}`);
+        if (headerCell) markSortableHeader(headerCell, column);
+      }
+    }
+  }
+
+  function changePageSize(event) {
+    pageSize = Number(event.target.value);
+    storeJson(PAGE_SIZE_STORAGE_KEY, pageSize);
+    reloadListOnFirstPage();
+  }
+
+  function createPageSizeControl() {
+    const select = document.createElement('select');
+    select.className = `${APP_FILTER_BUTTON_CLASSES} ${PAGE_SIZE_CONTROL_CLASS}`;
+    select.title = 'Tracks per page';
+    for (const size of PAGE_SIZES) {
+      const option = document.createElement('option');
+      option.value = String(size);
+      option.textContent = `${size} ${PAGE_SIZE_LABEL}`;
+      option.selected = size === pageSize;
+      select.appendChild(option);
+    }
+    select.addEventListener('change', changePageSize);
+    const holder = document.createElement('div');
+    holder.className = `mr-2 ${OWN_ELEMENT_CLASS}`;
+    holder.appendChild(select);
+    return holder;
+  }
+
+  // Next to the Hide downloaded button, in the bar above a track list.
+  function addPageSizeControls() {
+    for (const filterBar of document.querySelectorAll(LIST_FILTER_BARS_SELECTOR)) {
+      if (!filterBar.querySelector(APP_FILTER_DROPDOWN_SELECTOR)) continue;
+      if (filterBar.querySelector(`.${PAGE_SIZE_CONTROL_CLASS}`)) continue;
+      filterBar.prepend(createPageSizeControl());
+    }
+  }
+
+  function addSortingStyles() {
+    const style = document.createElement('style');
+    style.textContent = `
+      .${SORTABLE_HEADER_CLASS}, .${SORTABLE_HEADER_CLASS} * { cursor: pointer !important; }
+      [${SORT_DIRECTION_ATTRIBUTE}="${ASCENDING}"] a::after { content: ${ASCENDING_ARROW}; }
+      [${SORT_DIRECTION_ATTRIBUTE}="${DESCENDING}"] a::after { content: ${DESCENDING_ARROW}; }
+    `;
+    document.head.appendChild(style);
+  }
+
   // ---- Download manager ------------------------------------------------------------------
 
   function parseArtists(playLink) {
@@ -660,6 +947,8 @@
     enhanceTrackLists();
     dimDownloadedRows();
     addHideDownloadedToggles();
+    addSortableHeaders();
+    addPageSizeControls();
     enhanceDownloadManager();
     guardSearchInputs();
   }
@@ -668,6 +957,7 @@
   function startWhenDocumentIsReady() {
     addStyles();
     addRoomyStyles();
+    addSortingStyles();
     applyHideDownloaded();
     onPageChanged();
     new MutationObserver(onPageChanged).observe(document.body, { childList: true, subtree: true });
@@ -675,7 +965,9 @@
 
   console.info(LOG_PREFIX, 'running');
   hookResponses();
+  hookListSearchRequests();
   window.addEventListener('click', handleClick, true);
+  window.addEventListener('click', handleSortHeaderClick, true);
   document.addEventListener('input', rememberTypedSearchText, true);
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', startWhenDocumentIsReady);
