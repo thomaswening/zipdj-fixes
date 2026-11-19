@@ -40,22 +40,23 @@ Track lists and the download history get taller rows (48 instead of 40 pixels) a
 
 ### Keyboard shortcuts
 
-ZipDJ has keyboard shortcuts of its own, listed behind the keyboard icon in its player. Its keys for moving through a list work only on some pages, and its selected track is hard to see. The script takes over those keys, so they work on every track list, a release's own page included. It tints the selected row blue, and a click on a row selects it.
+ZipDJ has keyboard shortcuts of its own, listed behind the keyboard icon in its player. Its keys for moving through a list work only on some pages, its Space plays the selected track instead of pausing when you have moved on, and its selected track is hard to see. The script takes over those keys, so they work on every track list, a release's own page included. It tints the selected row blue, and a click on a row selects it.
 
 | Key | What it does |
 |---|---|
 | ↓ or J / ↑ or K | Select the next / previous track |
 | → / ← | Select and play the next / previous track |
 | Enter | Play the selected track |
+| Space | Pause, or go on playing. It always acts on the track in the player, even when you have selected another one. |
 | O | Open the selected track's release |
 | A | Add the selected track to the download list, as its arrow button does. No download is spent until you download from the download manager. |
 | N / P | Next / previous page |
 | / | Jump to the search box |
 | ? | Show or hide a list of all keys |
 
-ZipDJ's player keys stay as they are: Space pauses the playing track, or plays the selected one if you have moved on, Tab adds the selected track to the download list, Backspace mutes, Ctrl + ← / → seeks. The keys skip tracks hidden by **Hide downloaded**. The script's keys do nothing while you type in the search box.
+ZipDJ's other keys stay as they are: Tab adds the selected track to the download list. Backspace mutes. Ctrl + ← / → seeks. The keys skip tracks hidden by **Hide downloaded**. The script's keys do nothing while you type in the search box.
 
-![A ZipDJ track list with the selected row tinted blue, and the list that ? shows: the script's keys on the left, ZipDJ's player keys on the right](docs/images/keyboard-shortcuts.png)
+![A ZipDJ track list with the selected row tinted blue, and the list that ? shows: the script's keys on the left, ZipDJ's remaining keys on the right](docs/images/keyboard-shortcuts.png)
 
 ### Download manager
 
