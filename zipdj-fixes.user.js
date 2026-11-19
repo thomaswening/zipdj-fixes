@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         ZipDJ fixes
 // @namespace    https://github.com/thomaswening
-// @version      1.4.0
-// @description  Track lists: title and mix apart from the release, downloaded tracks dimmed or hidden, roomier rows and columns. Download manager: links to release, artist and label. Download history: a Label column and titles as real links. Search: keeps the space you just typed.
+// @version      1.5.0
+// @description  Track lists: title and mix apart from the release, sorting by any column, a page size of up to 500, downloaded tracks dimmed or hidden, roomier rows and columns. Download manager: links to release, artist and label. Download history: a Label column and titles as real links. Search: keeps the space you just typed.
 // @author       thomaswening
 // @license      GPL-3.0-or-later
 // @homepageURL  https://github.com/thomaswening/zipdj-fixes
@@ -22,6 +22,7 @@
 //   The download manager loads its own list, which holds the label. The script listens to
 //   both answers. It cannot ask by itself: Cloudflare blocks such requests.
 // - For each track list, ZipDJ also loads which of its tracks the member has downloaded.
+// - For sorting and the page size, it changes a track list's search request before it leaves.
 // - It runs in the page itself ("@grant none", "@inject-into page"), where the app's
 //   XMLHttpRequest and fetch live, and starts as early as it can to see the first request.
 // - It adds its own elements next to the app's and hides the app's with CSS instead of
