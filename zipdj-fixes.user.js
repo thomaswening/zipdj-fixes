@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         ZipDJ fixes
 // @namespace    https://github.com/thomaswening
-// @version      1.5.0
-// @description  Track lists: title and mix apart from the release, sorting by any column, a page size of up to 500, downloaded tracks dimmed or hidden, roomier rows and columns. Download manager: links to release, artist and label. Download history: a Label column and titles as real links. Search: keeps the space you just typed.
+// @version      1.6.0
+// @description  Track lists: title and mix apart from the release, sorting by any column, a page size of up to 500, downloaded tracks dimmed or hidden, roomier rows and columns, keyboard shortcuts (press ?). Download manager: links to release, artist and label. Download history: a Label column and titles as real links. Search: keeps the space you just typed.
 // @author       thomaswening
 // @license      GPL-3.0-or-later
 // @homepageURL  https://github.com/thomaswening/zipdj-fixes
@@ -921,6 +921,274 @@
     document.head.appendChild(style);
   }
 
+  // ---- Keyboard shortcuts ----------------------------------------------------------------
+
+  // ZipDJ has keys of its own (its player's keyboard icon lists them). Its row keys work only
+  // on some lists, not on a release's page, and step onto rows hidden by "Hide downloaded".
+  // So the script takes over the row keys and leaves the player's keys to ZipDJ. It marks
+  // the selected row with ZipDJ's own class, so ZipDJ's Tab still acts on that row.
+  const APP_SELECTED_ROW_CLASS = 'hotkey-bg';
+  const TRACK_ROW_SELECTOR = 'tr.zdtrackslist';
+  const ADD_TO_DOWNLOAD_LIST_SELECTOR = 'a.zd-download-btn';
+  const NEXT_PAGE_SELECTOR = '.sk-pagination-navigation [data-key="next"]:not(.is-disabled)';
+  const PREVIOUS_PAGE_SELECTOR = '.sk-pagination-navigation [data-key="previous"]:not(.is-disabled)';
+  const PLAYER_PLAY_PAUSE_SELECTOR = 'span.play-btn';
+  const SHORTCUTS_OVERLAY_CLASS = 'zdx-shortcuts';
+  const APP_ACCENT_COLOUR = '#4f7be9';
+  const SELECTED_ROW_BACKGROUND = 'rgba(79, 123, 233, 0.18)'; // the accent colour, faded
+  // Wider than any cell, so an inset shadow of this spread fills the whole cell.
+  const SCREEN_COVERING_SHADOW_SPREAD = '9999px';
+  // Keeps a row scrolled to by a key clear of the app's top bar and its player at the bottom.
+  const ROW_SCROLL_MARGIN = '80px';
+  const NEXT_ROW = 1;
+  const PREVIOUS_ROW = -1;
+
+  /** ZipDJ's keys that the script leaves alone, for the list that "?" shows. */
+  const APP_SHORTCUTS = [
+    { label: 'Tab', description: 'Add the selected track to the download list' },
+    { label: 'Backspace', description: 'Mute' },
+    { label: 'Ctrl + ← →', description: 'Seek' },
+  ];
+
+  /**
+   * The script's keys. "keys" holds values of KeyboardEvent.key in lower case. A key with
+   * "isAvailable" acts only when it returns true, so elsewhere the arrows still scroll the
+   * page and Space still scrolls or presses a button. A key that yields to a focused control
+   * leaves Enter or Space on a focused button to that button.
+   */
+  const OWN_SHORTCUTS = [
+    { label: '↓ or J', keys: ['arrowdown', 'j'], description: 'Select the next track',
+      isAvailable: hasTrackRows, run: () => moveSelection(NEXT_ROW) },
+    { label: '↑ or K', keys: ['arrowup', 'k'], description: 'Select the previous track',
+      isAvailable: hasTrackRows, run: () => moveSelection(PREVIOUS_ROW) },
+    { label: '→', keys: ['arrowright'], description: 'Select and play the next track',
+      isAvailable: hasTrackRows, run: () => moveSelectionAndPlay(NEXT_ROW) },
+    { label: '←', keys: ['arrowleft'], description: 'Select and play the previous track',
+      isAvailable: hasTrackRows, run: () => moveSelectionAndPlay(PREVIOUS_ROW) },
+    { label: 'Enter', keys: ['enter'], description: 'Play the selected track',
+      isAvailable: hasTrackRows, yieldsToFocusedControl: true, run: playSelected },
+    // ZipDJ's own Space plays the selected track instead when it isn't the one playing.
+    { label: 'Space', keys: [' '], description: 'Pause or go on playing',
+      isAvailable: hasPlayer, yieldsToFocusedControl: true,
+      run: () => clickIfPresent(PLAYER_PLAY_PAUSE_SELECTOR) },
+    { label: 'O', keys: ['o'], description: "Open the selected track's release", run: openSelectedRelease },
+    { label: 'A', keys: ['a'], description: 'Add the selected track to the download list',
+      run: addSelectedToDownloadList },
+    { label: 'N', keys: ['n'], description: 'Next page', run: () => clickIfPresent(NEXT_PAGE_SELECTOR) },
+    { label: 'P', keys: ['p'], description: 'Previous page', run: () => clickIfPresent(PREVIOUS_PAGE_SELECTOR) },
+    { label: '/', keys: ['/'], description: 'Search', run: focusSearch },
+    { label: '?', keys: ['?'], description: 'Show or hide this list', run: toggleShortcutsOverlay },
+  ];
+
+  const SHORTCUTS_BY_KEY = new Map(
+    OWN_SHORTCUTS.flatMap((shortcut) => shortcut.keys.map((key) => [key, shortcut])),
+  );
+
+  let shortcutsOverlay = null;
+  /** The track the user last selected, so the selection survives the app's redraws. */
+  let selectedTrackId = null;
+
+  function isShown(element) {
+    return element.getClientRects().length > 0;
+  }
+
+  // Leaves out rows hidden by "Hide downloaded", so no key selects an invisible track.
+  function trackRows() {
+    return [...document.querySelectorAll(TRACK_ROW_SELECTOR)].filter(
+      (row) => row.querySelector(PLAY_LINK_SELECTOR) && isShown(row),
+    );
+  }
+
+  function selectedRow() {
+    return document.querySelector(`${TRACK_ROW_SELECTOR}.${APP_SELECTED_ROW_CLASS}`);
+  }
+
+  function rowsMarkedSelected() {
+    return document.querySelectorAll(`${TRACK_ROW_SELECTOR}.${APP_SELECTED_ROW_CLASS}`);
+  }
+
+  function selectRow(row) {
+    rowsMarkedSelected().forEach((other) => other.classList.remove(APP_SELECTED_ROW_CLASS));
+    row.classList.add(APP_SELECTED_ROW_CLASS);
+    selectedTrackId = row.querySelector(PLAY_LINK_SELECTOR).dataset.id;
+  }
+
+  // When a track starts or pauses, the app redraws the rows' classes: it drops the class
+  // from the selected row and gives it to the playing one. This puts it back.
+  function restoreSelection() {
+    if (selectedTrackId === null) return;
+    const playLink = document.querySelector(
+      `${TRACK_ROW_SELECTOR} ${PLAY_LINK_SELECTOR}[data-id="${selectedTrackId}"]`,
+    );
+    const row = playLink?.closest(TRACK_ROW_SELECTOR);
+    if (!row) return;
+    const marked = rowsMarkedSelected();
+    if (marked.length === 1 && marked[0] === row) return;
+    selectRow(row);
+  }
+
+  // Without a selected row, either key selects the first one.
+  function moveSelection(step) {
+    const rows = trackRows();
+    if (rows.length === 0) return;
+    const currentIndex = rows.indexOf(selectedRow());
+    const nextIndex =
+      currentIndex < 0 ? 0 : Math.min(Math.max(currentIndex + step, 0), rows.length - 1);
+    selectRow(rows[nextIndex]);
+    rows[nextIndex].scrollIntoView({ block: 'nearest' });
+  }
+
+  // Clicks the row's own play link, as a mouse click on it would.
+  function playSelected() {
+    selectedRow()?.querySelector(PLAY_LINK_SELECTOR)?.click();
+  }
+
+  function moveSelectionAndPlay(step) {
+    moveSelection(step);
+    playSelected();
+  }
+
+  function openSelectedRelease() {
+    const releaseId = selectedRow()?.querySelector(PLAY_LINK_SELECTOR)?.dataset.release_id;
+    if (releaseId) navigateInApp(releaseUrl(releaseId));
+  }
+
+  // The row's arrow button only puts the track on the download manager's list. A download
+  // is spent later, from the download manager.
+  function addSelectedToDownloadList() {
+    selectedRow()?.querySelector(ADD_TO_DOWNLOAD_LIST_SELECTOR)?.click();
+  }
+
+  function clickIfPresent(selector) {
+    document.querySelector(selector)?.click();
+  }
+
+  function focusSearch() {
+    document.querySelector(SEARCH_INPUT_SELECTOR)?.focus();
+  }
+
+  function createShortcutsSection(heading, shortcuts) {
+    const section = document.createElement('section');
+    const title = document.createElement('h3');
+    title.textContent = heading;
+    const list = document.createElement('dl');
+    for (const { label, description } of shortcuts) {
+      const key = document.createElement('dt');
+      key.textContent = label;
+      const meaning = document.createElement('dd');
+      meaning.textContent = description;
+      list.append(key, meaning);
+    }
+    section.append(title, list);
+    return section;
+  }
+
+  function createShortcutsOverlay() {
+    const overlay = document.createElement('div');
+    overlay.className = SHORTCUTS_OVERLAY_CLASS;
+    overlay.hidden = true;
+    overlay.append(
+      createShortcutsSection('ZipDJ fixes', OWN_SHORTCUTS),
+      createShortcutsSection('ZipDJ', APP_SHORTCUTS),
+    );
+    overlay.addEventListener('click', () => (overlay.hidden = true));
+    document.body.appendChild(overlay);
+    return overlay;
+  }
+
+  function toggleShortcutsOverlay() {
+    shortcutsOverlay ??= createShortcutsOverlay();
+    shortcutsOverlay.hidden = !shortcutsOverlay.hidden;
+  }
+
+  function isOverlayShown() {
+    return shortcutsOverlay !== null && !shortcutsOverlay.hidden;
+  }
+
+  function isTyping(target) {
+    return target.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName);
+  }
+
+  // Shift stays allowed: "?" and, on some keyboards, "/" need it.
+  function hasCommandModifier(event) {
+    return event.ctrlKey || event.altKey || event.metaKey;
+  }
+
+  function handleShortcutKey(event) {
+    if (hasCommandModifier(event) || isTyping(event.target)) return;
+    if (event.key === 'Escape' && isOverlayShown()) {
+      shortcutsOverlay.hidden = true;
+      event.stopImmediatePropagation();
+      return;
+    }
+    const shortcut = SHORTCUTS_BY_KEY.get(event.key.toLowerCase());
+    if (!shortcut || !appliesHere(shortcut, event.target)) return;
+    // Keeps "/" out of the search box it has just focused, the arrows from scrolling the
+    // page, and ZipDJ from acting on the same key a second time.
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    shortcut.run();
+  }
+
+  // Buttons only: a play link keeps the focus after a click, and Enter on it would replay
+  // that track instead of the selected one.
+  function isFocusedControl(target) {
+    return target.closest?.('button') !== null;
+  }
+
+  function hasTrackRows() {
+    return trackRows().length > 0;
+  }
+
+  function hasPlayer() {
+    return document.querySelector(PLAYER_PLAY_PAUSE_SELECTOR) !== null;
+  }
+
+  function appliesHere(shortcut, target) {
+    if (shortcut.isAvailable && !shortcut.isAvailable()) return false;
+    return !(shortcut.yieldsToFocusedControl && isFocusedControl(target));
+  }
+
+  function selectClickedRow(event) {
+    const row = event.target.closest?.(TRACK_ROW_SELECTOR);
+    if (row && row.querySelector(PLAY_LINK_SELECTOR)) selectRow(row);
+  }
+
+  // The app sets the selected row's background with long "!important" selectors, one per
+  // page layout. An inset shadow covers that background instead of outranking each of them.
+  function addShortcutStyles() {
+    const selectedCells = `${TRACK_ROW_SELECTOR}.${APP_SELECTED_ROW_CLASS} > td`;
+    const tint = `inset 0 0 0 ${SCREEN_COVERING_SHADOW_SPREAD} ${SELECTED_ROW_BACKGROUND}`;
+    const style = document.createElement('style');
+    style.textContent = `
+      ${TRACK_ROW_SELECTOR} { scroll-margin: ${ROW_SCROLL_MARGIN} 0; }
+      ${selectedCells} { box-shadow: ${tint}; }
+      .${SHORTCUTS_OVERLAY_CLASS} {
+        position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 10000;
+        display: flex; gap: 32px; padding: 20px 28px; border-radius: 8px;
+        background: #1b2228; color: #ddd; font-size: 13px; box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
+      }
+      .${SHORTCUTS_OVERLAY_CLASS}[hidden] { display: none; }
+      .${SHORTCUTS_OVERLAY_CLASS} h3 { margin: 0 0 10px; font-size: 14px; color: ${APP_ACCENT_COLOUR}; }
+      .${SHORTCUTS_OVERLAY_CLASS} dl {
+        display: grid; grid-template-columns: auto auto; gap: 6px 16px; margin: 0;
+      }
+      .${SHORTCUTS_OVERLAY_CLASS} dt { font-weight: 600; white-space: nowrap; }
+      .${SHORTCUTS_OVERLAY_CLASS} dd { margin: 0; color: #9aa7b0; }
+    `;
+    document.head.appendChild(style);
+  }
+
+  function startKeyboardShortcuts() {
+    addShortcutStyles();
+    window.addEventListener('keydown', handleShortcutKey, true);
+    window.addEventListener('click', selectClickedRow, true);
+    new MutationObserver(restoreSelection).observe(document.body, {
+      subtree: true,
+      attributeFilter: ['class'],
+    });
+  }
+
   // ---- Start -----------------------------------------------------------------------------
 
   function addStyles() {
@@ -965,6 +1233,7 @@
     addRoomyStyles();
     addSortingStyles();
     applyHideDownloaded();
+    startKeyboardShortcuts();
     onPageChanged();
     new MutationObserver(onPageChanged).observe(document.body, { childList: true, subtree: true });
   }

@@ -1,11 +1,12 @@
 # ZipDJ fixes
 
-A userscript for members of [ZipDJ](https://www.zipdj.com), the DJ record pool. It fixes annoyances in ZipDJ's member web app, in seven places:
+A userscript for members of [ZipDJ](https://www.zipdj.com), the DJ record pool. It fixes annoyances in ZipDJ's member web app, in eight places:
 
 - [Track lists](#track-lists): title and mix apart from the release
 - [Downloaded tracks](#downloaded-tracks): dimmed or hidden in track lists
 - [Sorting and page size](#sorting-and-page-size): sort by any column, up to 500 tracks a page
 - [Roomier look](#roomier-look): taller rows, larger text, wider Label and Genre columns
+- [Keyboard shortcuts](#keyboard-shortcuts): keys for track lists, and a visible selection
 - [Download manager](#download-manager): links to release, artist and label
 - [Download history](#download-history): a Label column and real links
 - [Search box](#search-box): keeps the space you just typed
@@ -50,6 +51,26 @@ Track lists and the download history get taller rows (48 instead of 40 pixels) a
 
 ![ZipDJ's New Releases with the download manager open: taller rows, labels such as "Must Make Music" in a wider Label column, no Released column, and download manager entries on three spaced lines](docs/images/roomier-track-list.png)
 
+### Keyboard shortcuts
+
+ZipDJ has keyboard shortcuts of its own, listed behind the keyboard icon in its player. Its keys for moving through a list work only on some pages. Its Space plays the selected track instead of pausing when you have moved on. Its selected track is hard to see. The script takes over those keys, so they work on every track list, a release's own page included. It tints the selected row blue, and a click on a row selects it.
+
+| Key | What it does |
+|---|---|
+| ↓ or J / ↑ or K | Select the next / previous track |
+| → / ← | Select and play the next / previous track |
+| Enter | Play the selected track |
+| Space | Pause, or go on playing. It always acts on the track in the player, even when you have selected another one. |
+| O | Open the selected track's release |
+| A | Add the selected track to the download list, as its arrow button does. No download is spent until you download from the download manager. |
+| N / P | Next / previous page |
+| / | Jump to the search box |
+| ? | Show or hide a list of all keys |
+
+ZipDJ's other keys stay as they are: Tab adds the selected track to the download list. Backspace mutes. Ctrl + ← / → seeks. The keys skip tracks hidden by **Hide downloaded**. The script's keys do nothing while you type in the search box.
+
+![A ZipDJ track list with the selected row tinted blue, and the list that ? shows: the script's keys on the left, ZipDJ's remaining keys on the right](docs/images/keyboard-shortcuts.png)
+
 ### Download manager
 
 Each entry links its release, each of its artists and its label, which is added as a third line. For an EP track, the entry shows the track's own title when the track has appeared in a list since the page was loaded. Otherwise it shows the release's name, as ZipDJ does.
@@ -70,7 +91,7 @@ On the search results page, a space typed right after a letter no longer disappe
 
 ## Status
 
-Version 1.5.0, 19 November 2026. It was tested by injection in Chrome. Version 1.0.0, the first public release, was also tested with Violentmonkey in Firefox.
+Version 1.6.0, 19 November 2026. It was tested by injection in Chrome. Version 1.0.0, the first public release, was also tested with Violentmonkey in Firefox.
 
 ## Install
 
