@@ -1,15 +1,16 @@
 # ZipDJ fixes
 
-A userscript for members of [ZipDJ](https://www.zipdj.com), the DJ record pool. It fixes annoyances in ZipDJ's member web app, in six places:
+A userscript for members of [ZipDJ](https://www.zipdj.com), the DJ record pool. It fixes annoyances in ZipDJ's member web app, in seven places:
 
 - [Track lists](#track-lists): title and mix apart from the release
 - [Downloaded tracks](#downloaded-tracks): dimmed or hidden in track lists
+- [Sorting and page size](#sorting-and-page-size): sort by any column, up to 500 tracks a page
 - [Roomier look](#roomier-look): taller rows, larger text, wider Label and Genre columns
 - [Download manager](#download-manager): links to release, artist and label
 - [Download history](#download-history): a Label column and real links
 - [Search box](#search-box): keeps the space you just typed
 
-The script sends no requests of its own. It reads titles, releases and labels from data ZipDJ's pages already load. It changes only how pages look and behave in your own browser.
+The script sends no requests of its own. It reads titles, releases and labels from data ZipDJ's pages already load. For sorting and the page size, it changes the track list's own request to ZipDJ's search before the page sends it. Everything else changes only how pages look and behave in your own browser.
 
 ## What it fixes
 
@@ -30,6 +31,18 @@ To leave downloaded tracks out altogether, click **Hide downloaded** next to Gen
 ![A ZipDJ track list of the label 8bit: the downloaded tracks, such as "Mother (Extended Mix)" and "Musica (Extended Mix)", are dimmed, while the others, such as "Mother (Osadon Remix)", are shown in full](docs/images/track-list-downloaded-dimmed.png)
 
 ![The same list with downloaded tracks hidden: the button next to Genre Filter reads "Show downloaded", and the list goes straight from "Mother (Osadon Remix)" to "Tribe (Malikk Remix)"](docs/images/track-list-downloaded-hidden.png)
+
+### Sorting and page size
+
+ZipDJ lists tracks newest release first, 50 to a page. Its column headers do nothing. With the script, a click on a column header sorts the list by that column: Track / Mix, Release, Artist, Label, Genre, Time, Key, BPM or Released. A second click reverses the order. An arrow next to the header shows the order in use. The search sorts all of the list's tracks, not only those on one page, so page 2 continues where page 1 stopped.
+
+BPM sorts as a number, so 99 comes before 100. Key sorts as text, so 11A comes before 5A. A single has no title of its own in ZipDJ's data, so sorting by Track / Mix doesn't place singles by their title.
+
+The menu left of Hide downloaded sets how many tracks a page shows: 50, 100, 200 or 500. The page buttons count pages of that size. Your browser remembers the order and the page size for every list. A change loads the list again from its first page. Charts and Top Downloads keep ZipDJ's ranking.
+
+![A ZipDJ track list of the label 8bit sorted by BPM: the BPM header shows an upward arrow, the menu next to Hide downloaded reads "100 per page", and the BPM column runs 120, 120, 121, 122](docs/images/track-list-sorted-by-bpm.png)
+
+ZipDJ signs you out when its search fails. So the script only asks for orders that were tried against ZipDJ's search, and never for more than its search hands out (10,000 tracks into a list).
 
 ### Roomier look
 
@@ -57,7 +70,7 @@ On the search results page, a space typed right after a letter no longer disappe
 
 ## Status
 
-Version 1.4.0, 18 November 2026. It was tested by injection in Chrome. Version 1.0.0, the first public release, was also tested with Violentmonkey in Firefox.
+Version 1.5.0, 19 November 2026. It was tested by injection in Chrome. Version 1.0.0, the first public release, was also tested with Violentmonkey in Firefox.
 
 ## Install
 
