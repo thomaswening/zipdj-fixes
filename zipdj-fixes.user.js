@@ -687,6 +687,8 @@
   );
 
   let shortcutsOverlay = null;
+  /** The track the user last selected, so the selection survives the app's redraws. */
+  let selectedTrackId = null;
 
   function isShown(element) {
     return element.getClientRects().length > 0;
@@ -703,11 +705,28 @@
     return document.querySelector(`${TRACK_ROW_SELECTOR}.${APP_SELECTED_ROW_CLASS}`);
   }
 
+  function rowsMarkedSelected() {
+    return document.querySelectorAll(`${TRACK_ROW_SELECTOR}.${APP_SELECTED_ROW_CLASS}`);
+  }
+
   function selectRow(row) {
-    document
-      .querySelectorAll(`${TRACK_ROW_SELECTOR}.${APP_SELECTED_ROW_CLASS}`)
-      .forEach((other) => other.classList.remove(APP_SELECTED_ROW_CLASS));
+    rowsMarkedSelected().forEach((other) => other.classList.remove(APP_SELECTED_ROW_CLASS));
     row.classList.add(APP_SELECTED_ROW_CLASS);
+    selectedTrackId = row.querySelector(PLAY_LINK_SELECTOR).dataset.id;
+  }
+
+  // When a track starts or pauses, the app redraws the rows' classes: it drops the class
+  // from the selected row and gives it to the playing one. This puts it back.
+  function restoreSelection() {
+    if (selectedTrackId === null) return;
+    const playLink = document.querySelector(
+      `${TRACK_ROW_SELECTOR} ${PLAY_LINK_SELECTOR}[data-id="${selectedTrackId}"]`,
+    );
+    const row = playLink?.closest(TRACK_ROW_SELECTOR);
+    if (!row) return;
+    const marked = rowsMarkedSelected();
+    if (marked.length === 1 && marked[0] === row) return;
+    selectRow(row);
   }
 
   // Without a selected row, either key selects the first one.
@@ -858,6 +877,10 @@
     addShortcutStyles();
     window.addEventListener('keydown', handleShortcutKey, true);
     window.addEventListener('click', selectClickedRow, true);
+    new MutationObserver(restoreSelection).observe(document.body, {
+      subtree: true,
+      attributeFilter: ['class'],
+    });
   }
 
   // ---- Start -----------------------------------------------------------------------------
