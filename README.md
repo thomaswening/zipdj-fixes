@@ -53,9 +53,9 @@ ZipDJ has keyboard shortcuts of its own, listed behind the keyboard icon in its 
 | / | Jump to the search box |
 | ? | Show or hide a list of all keys |
 
-ZipDJ's player keys stay as they are: Space plays or pauses, Tab adds the selected track to the download list, Backspace mutes, Ctrl + ← / → seeks. The keys skip tracks hidden by **Hide downloaded**. The script's keys do nothing while you type in the search box.
+ZipDJ's player keys stay as they are: Space pauses the playing track, or plays the selected one if you have moved on, Tab adds the selected track to the download list, Backspace mutes, Ctrl + ← / → seeks. The keys skip tracks hidden by **Hide downloaded**. The script's keys do nothing while you type in the search box.
 
-![A ZipDJ track list with the selected row tinted blue, and the list that ? shows: ZipDJ's keys on the left, the script's keys on the right](docs/images/keyboard-shortcuts.png)
+![A ZipDJ track list with the selected row tinted blue, and the list that ? shows: the script's keys on the left, ZipDJ's player keys on the right](docs/images/keyboard-shortcuts.png)
 
 ### Download manager
 
